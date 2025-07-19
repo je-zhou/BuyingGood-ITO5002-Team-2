@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[28]:
-
-
 ## DATA CLEANING - ABS_CABEE_BY_LGA
 
 # Import libraries
@@ -39,7 +33,7 @@ for df in (df_1,df_2,df_3):
     # Set data types
     df_clean = df_clean.astype({'state':str,'lga_code':int,'lga_label':str,'industry_code':str,'industry_label':str,'non_employing':int,'1_4_employees':int,'5_19_employees':int,'20_199_employees':int,'200_plus_employees':int,'total':int})
 
-    # Add row to label fruit or vegetable
+    # Add row to label date
     if df.equals(df_1):
         df_clean['date'] = pd.to_datetime('2024-06-30')
     elif df.equals(df_2):
@@ -64,4 +58,3 @@ for df in (df_1,df_2,df_3):
     
 # Export cleaned data to csv
 df_clean.to_csv('ABS_CABEE_BY_LGA_CLEAN.csv', index = False)
-
