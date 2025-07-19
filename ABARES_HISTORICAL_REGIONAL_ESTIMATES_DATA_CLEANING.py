@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 ## DATA CLEANING - ABARES_HISTORICAL_REGIONAL_ESTIMATES
 
 # Import libraries
@@ -26,4 +20,3 @@ df_clean = df_clean.astype({'variable': str, 'year': int, 'abares_region': str, 
 
 # Export cleaned data to csv
 df_clean.to_csv('ABARES_HISTORICAL_REGIONAL_ESTIMATES_CLEAN.csv', index = False)
-
