@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[2]:
-
-
 ## DATA CLEANING - ABS_HORTICULTURAL_CROPS_BY_STATE
 
 # Import libraries
@@ -63,4 +57,3 @@ for df in (df_1,df_2):
     
 # Export cleaned data to csv
 df_comb.to_csv('ABS_HORTICULTURAL_CROPS_BY_STATE_CLEAN.csv', index = False)
-
