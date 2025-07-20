@@ -7,13 +7,13 @@ export default function Navbar() {
   return (
     <nav className="flex justify-between items-center p-4 w-full">
       {/* Icon and Brand */}
-      <div className="flex items-center gap-2">
+      <Link href="/" className="flex items-center gap-2 cursor-pointer">
         <Image src="/logo.png" alt="logo" width={32} height={32} />
         <h1 className="text-2xl ">
           <span className="text-black/70">Buying</span>
           <span className="text-primary font-bold">Good</span>
         </h1>
-      </div>
+      </Link>
 
       {/* Nav Links */}
       <div className="flex items-center gap-4">
