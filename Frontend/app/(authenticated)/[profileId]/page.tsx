@@ -1,5 +1,10 @@
 import React from "react";
 
-export default function Page({ params }: { params: { profileId: string } }) {
-  return <div>{params.profileId}</div>;
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ profileId: string }>;
+}) {
+  const resolvedParams = await params;
+  return <div>{resolvedParams.profileId}</div>;
 }
