@@ -30,7 +30,13 @@ from flask import Flask, jsonify, request
 import exceptions as exc
 import hashlib
 import time
+import datetime
 import uuid
+
+app = Flask(__name__)
+
+
+""" Authentication Endpoints """
 
 def generate_nonce():
     """Generate nonce."""
@@ -58,10 +64,15 @@ def check_bearer_valid(bearer_token : str, request_time : float, remote_addr : s
         "remote_addr": remote_addr
     })
 
+    # Add time to the bearer token to keep it alive
+    if document is not None:
+        db.bearer_tokens.update_one({
+            "_id": document["_id"]
+        },{"$set":{
+            "expiry": document["request_time"] + datetime.timedelta(minutes=10)
+        }})
+
     return document is not None
-
-
-app = Flask(__name__)
 
 @app.route("/auth/register", methods=["POST"])
 def auth_register():
@@ -92,7 +103,10 @@ def auth_register():
             }
         }
     """
+
     try:
+        request_time = datetime.datetime.now()
+
         # Try to get the request body and make sure it is valid
         data = request.form
         print(f"{request.remote_addr}: Request body received, {data}")
@@ -107,8 +121,8 @@ def auth_register():
         # Check if the user email is already registered
         existing_user = db.users.find_one({"email": data.get("email")})
         if existing_user is not None:
-            print(f"    {request.remote_addr}: Email is alread registered, {data.get("email")}")
-            raise exc.BadRequest(f"Email is alread registered, {data.get("email")}")
+            print(f"    {request.remote_addr}: Email is already registered, {data.get("email")}")
+            raise exc.BadRequest(f"Email is already registered, {data.get("email")}")
         
         # Salt and hash the password
         hashed_password = hashlib.sha256((data.get("password") + salt).encode()).hexdigest()
@@ -118,9 +132,10 @@ def auth_register():
             "email": data.get("email"),
             "firstName": data.get("firstName"),
             "lastName": data.get("lastName"),
-            "phoneNumber": data.get("phoneNumber")
+            "phoneNumber": data.get("phoneNumber"),
+            "createdAt": request_time,
+            "modifiedAt": request_time
         }).inserted_id
-        # user_id = str(user_id)
         print(f"    {request.remote_addr}: user_id created, {user_id}")
 
         # Attempt to create the login credentials in the database
@@ -157,10 +172,50 @@ def auth_register():
             }
         }), 201
     except exc.BadRequest as e:
-        return jsonify({"error": e.message}), 400
+        return jsonify(
+            {
+                "success": False,
+                "error": {
+                    "code": "400",
+                    "message": "BAD_REQUEST",
+                    "details": e.message
+                }
+            }
+        ), 400
+    except exc.Unauthorized as e:
+        return jsonify(
+            {
+                "success": False,
+                "error": {
+                    "code": "401",
+                    "message": "UNAUTHORIZED",
+                    "details": e.message
+                }
+            }
+        ), 401
+    except exc.Forbidden as e:
+        return jsonify(
+            {
+                "success": False,
+                "error": {
+                    "code": "403",
+                    "message": "FORBIDDEN",
+                    "details": e.message
+                }
+            }
+        ), 403
     except Exception as e:
         print(e)
-        return jsonify({"error": "The server encountered an unexpected condition that prevented it from fulfilling the request."}), 500
+        return jsonify(
+            {
+                "success": False,
+                "error": {
+                    "code": "500",
+                    "message": "INTERNAL_ERROR",
+                    "details": "The server encountered an unexpected condition that prevented it from fulfilling the request."
+                }
+            }
+        ), 500
 
 @app.route("/auth/login", methods=["POST"])
 def auth_login():
@@ -186,7 +241,10 @@ def auth_login():
             }
         }
     """
+
     try:
+        request_time = datetime.datetime.now()
+        
         # Try to get the request body and make sure it is valid
         data = request.form
         print(f"{request.remote_addr}: Request body received, {data}")
@@ -223,15 +281,15 @@ def auth_login():
         
         # Attempt to create a new bearer token with a 10 minute expiry
         nonce = generate_nonce()
-        created_timestamp = int(time.time())
-        expiry_timestamp = int(time.time())+600
+        created_timestamp = request_time
+        expiry_timestamp = request_time + datetime.timedelta(minutes=10)
         db.bearer_tokens.insert_one({
             "user_id": user_id,
-            "token": nonce,
+            "remote_addr": request.remote_addr,
             "expiry": expiry_timestamp,
-            "active": True,
             "created": created_timestamp,
-            "remote_addr": request.remote_addr
+            "token": nonce,
+            "active": True
         })
         print(f"    {request.remote_addr}: bearer token created, {nonce}")
 
@@ -252,15 +310,56 @@ def auth_login():
             }
         }), 200
     except exc.BadRequest as e:
-        return jsonify({"error": e.message}), 400
+        return jsonify(
+            {
+                "success": False,
+                "error": {
+                    "code": "400",
+                    "message": "BAD_REQUEST",
+                    "details": e.message
+                }
+            }
+        ), 400
+    except exc.Unauthorized as e:
+        return jsonify(
+            {
+                "success": False,
+                "error": {
+                    "code": "401",
+                    "message": "UNAUTHORIZED",
+                    "details": e.message
+                }
+            }
+        ), 401
+    except exc.Forbidden as e:
+        return jsonify(
+            {
+                "success": False,
+                "error": {
+                    "code": "403",
+                    "message": "FORBIDDEN",
+                    "details": e.message
+                }
+            }
+        ), 403
     except Exception as e:
         print(e)
-        return jsonify({"error": "The server encountered an unexpected condition that prevented it from fulfilling the request."}), 500
+        return jsonify(
+            {
+                "success": False,
+                "error": {
+                    "code": "500",
+                    "message": "INTERNAL_ERROR",
+                    "details": "The server encountered an unexpected condition that prevented it from fulfilling the request."
+                }
+            }
+        ), 500
 
 @app.route('/auth/check_token', methods=["GET"])
 def auth_check_token():
+
     try:
-        request_time = int(time.time())
+        request_time = datetime.datetime.now()
 
         data = request.args
         print(f"{request.remote_addr}: Request body received, {data}")
@@ -278,14 +377,53 @@ def auth_check_token():
             "message": f"Token is valid as of {str(request_time)}"
         }), 200
     except exc.BadRequest as e:
-        return jsonify({"error": e.message}), 400
+        return jsonify(
+            {
+                "success": False,
+                "error": {
+                    "code": "400",
+                    "message": "BAD_REQUEST",
+                    "details": e.message
+                }
+            }
+        ), 400
     except exc.Unauthorized as e:
-        return jsonify({"error": e.message}), 401
+        return jsonify(
+            {
+                "success": False,
+                "error": {
+                    "code": "401",
+                    "message": "UNAUTHORIZED",
+                    "details": e.message
+                }
+            }
+        ), 401
     except exc.Forbidden as e:
-        return jsonify({"error": e.message}), 403
+        return jsonify(
+            {
+                "success": False,
+                "error": {
+                    "code": "403",
+                    "message": "FORBIDDEN",
+                    "details": e.message
+                }
+            }
+        ), 403
     except Exception as e:
         print(e)
-        return jsonify({"error": "The server encountered an unexpected condition that prevented it from fulfilling the request."}), 500
+        return jsonify(
+            {
+                "success": False,
+                "error": {
+                    "code": "500",
+                    "message": "INTERNAL_ERROR",
+                    "details": "The server encountered an unexpected condition that prevented it from fulfilling the request."
+                }
+            }
+        ), 500
+
+
+""" Run Flask App """
 
 if __name__ == '__main__':
     app.run(debug=True)
