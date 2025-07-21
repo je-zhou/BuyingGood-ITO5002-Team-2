@@ -42,6 +42,21 @@ Authorization: Bearer <jwt_token>
 
 **Response (201 Created):**
 
+`````json
+{
+  "success": true,
+  "data": {...
+  }
+}
+
+### 1.2 Update Farmer Details
+
+**Endpoint:** `POST /auth/update`
+
+**Authentication:** Required
+
+**Request Body:**
+
 ```json
 {
   "data": {
@@ -53,20 +68,23 @@ Authorization: Bearer <jwt_token>
         "id": "idn_29w83yL7CwVlJXylYLxcslromF1",
         "linked_to": [],
         "object": "email_address",
+        "reserved": true,
         "verification": {
+          "attempts": null,
+          "expire_at": null,
           "status": "verified",
-          "strategy": "ticket"
+          "strategy": "admin"
         }
       }
     ],
     "external_accounts": [],
-    "external_id": "567772",
+    "external_id": null,
     "first_name": "Example",
     "gender": "",
     "id": "user_29w83sxmDNGwOuEthce5gg56FcC",
     "image_url": "https://img.clerk.com/xxxxxx",
-    "last_name": "Example",
-    "last_sign_in_at": 1654012591514,
+    "last_name": null,
+    "last_sign_in_at": null,
     "object": "user",
     "password_enabled": true,
     "phone_numbers": [],
@@ -78,16 +96,64 @@ Authorization: Bearer <jwt_token>
     "public_metadata": {},
     "two_factor_enabled": false,
     "unsafe_metadata": {},
-    "updated_at": 1654012591835,
+    "updated_at": 1654012824306,
     "username": null,
     "web3_wallets": []
   },
-  "instance_id": "ins_123",
+  "event_attributes": {
+    "http_request": {
+      "client_ip": "0.0.0.0",
+      "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+    }
+  },
   "object": "event",
-  "timestamp": 1654012591835,
-  "type": "user.created"
+  "timestamp": 1654012824306,
+  "type": "user.updated"
 }
 ```
+
+**Response (200 OK):**
+
+````json
+{
+  "success": true,
+  "data": {...
+  }
+}
+
+### 1.3 Delete Farmer Details
+
+**Endpoint:** `POST /auth/delete`
+
+**Authentication:** Required
+
+**Request Body:**
+
+```json
+{
+  "data": {
+    "deleted": true,
+    "id": "user_29wBMCtzATuFJut8jO2VNTVekS4",
+    "object": "user"
+  },
+  "event_attributes": {
+    "http_request": {
+      "client_ip": "0.0.0.0",
+      "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+    }
+  },
+  "object": "event",
+  "timestamp": 1661861640000,
+  "type": "user.deleted"
+}
+```
+
+**Response (200 OK):**
+
+````json
+{
+  "success": true,
+}
 
 ### 1.3 Get User Profile
 
@@ -109,7 +175,7 @@ Authorization: Bearer <jwt_token>
     "updatedAt": "2024-01-15T10:30:00Z"
   }
 }
-```
+`````
 
 ---
 
