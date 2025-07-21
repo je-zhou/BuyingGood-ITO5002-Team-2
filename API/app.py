@@ -1,12 +1,16 @@
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
-
+""" Environment Variables """
 import os
 
 mongodb_user = os.getenv('mongodb_user')
 mongodb_pass = os.getenv('mongodb_pass')
 mongodb_uri = os.getenv('mongodb_uri')
 mongodb_appname = os.getenv('mongodb_appname')
+salt = os.getenv('salt')
+
+
+""" MongoDB Setup """
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
 
 uri = f"mongodb+srv://{mongodb_user}:{mongodb_pass}@{mongodb_uri}/?retryWrites=true&w=majority&appName={mongodb_appname}"
 
@@ -21,52 +25,267 @@ except Exception as e:
     print(e)
 
 
+""" Flask """
 from flask import Flask, jsonify, request
+import exceptions as exc
+import hashlib
+import time
+import uuid
+
+def generate_nonce():
+    """Generate nonce."""
+    nonce = uuid.uuid1()
+    return nonce.hex
+
+def check_bearer_valid(bearer_token : str, request_time : float, remote_addr : str):
+    """
+        Check if the provided email and bearer_token are valid
+
+        parameters:
+            bearer_token : str, the token that the user is trying to authenticate with
+            request_time : float, the time that the request was sent
+        
+        return:
+            True | False, True if the bearer token is valid, False if it is not valid
+            
+    """
+    db = client.authentication
+
+    document = db.bearer_tokens.find_one({
+        "token": bearer_token,
+        "expiry": { "$gt" : request_time },
+        "active": True,
+        "remote_addr": remote_addr
+    })
+
+    return document is not None
+
 
 app = Flask(__name__)
 
-# Sample data
-items = [
-    {"id": 1, "name": "Item 1"},
-    {"id": 2, "name": "Item 2"}
-]
+@app.route("/auth/register", methods=["POST"])
+def auth_register():
+    """
+        Register a new farmer account
+    
+        Endpoint: POST /auth/register
 
-@app.route('/items', methods=['GET'])
-def get_items():
-    return jsonify(items), 200
+        Request Body:
+        {
+            "email": "farmer@example.com",
+            "password": "securePassword123",
+            "firstName": "John",
+            "lastName": "Doe",
+            "phoneNumber": "+1234567890"
+        }
 
-@app.route('/items', methods=['POST'])
-def add_item():
-    new_item = request.get_json()
-    new_item["id"] = len(items) + 1  # Assign an ID
-    items.append(new_item)
-    return jsonify(new_item), 201
+        Response (201 Created):
+        {
+            "success": true,
+            "message": "Farmer registered successfully",
+            "data": {
+                "userId": "uuid-string",
+                "email": "farmer@example.com",
+                "firstName": "John",
+                "lastName": "Doe",
+                "token": "jwt-token-string"
+            }
+        }
+    """
+    try:
+        # Try to get the request body and make sure it is valid
+        data = request.form
+        print(f"{request.remote_addr}: Request body received, {data}")
 
-@app.route('/items/<int:item_id>', methods=['GET'])
-def get_item(item_id):
-    item = next((item for item in items if item["id"] == item_id), None)
-    if item:
-        return jsonify(item), 200
-    return jsonify({"error": "Item not found"}), 404
+        for key in ["email","password","firstName","lastName","phoneNumber"]:
+            if not key in list(data.keys()):
+                raise exc.BadRequest(f"Missing parameter, {key}")
+        
+        # Connect to the database 
+        db = client.authentication
+        
+        # Check if the user email is already registered
+        existing_user = db.users.find_one({"email": data.get("email")})
+        if existing_user is not None:
+            print(f"    {request.remote_addr}: Email is alread registered, {data.get("email")}")
+            raise exc.BadRequest(f"Email is alread registered, {data.get("email")}")
+        
+        # Salt and hash the password
+        hashed_password = hashlib.sha256((data.get("password") + salt).encode()).hexdigest()
 
-@app.route('/items/<int:item_id>', methods=['PUT'])
-def update_item(item_id):
-    updated_data = request.get_json()
-    for item in items:
-        if item["id"] == item_id:
-            item.update(updated_data)
-            return jsonify(item), 200
-    return jsonify({"error": "Item not found"}), 404
+        # Attempt to create the user in the database
+        user_id = db.users.insert_one({
+            "email": data.get("email"),
+            "firstName": data.get("firstName"),
+            "lastName": data.get("lastName"),
+            "phoneNumber": data.get("phoneNumber")
+        }).inserted_id
+        # user_id = str(user_id)
+        print(f"    {request.remote_addr}: user_id created, {user_id}")
 
-@app.route('/items/<int:item_id>', methods=['DELETE'])
-def delete_item(item_id):
-    global items
-    item = next((item for item in items if item["id"] == item_id), None)
-    if item:
-        items = [item for item in items if item["id"] != item_id]
-        return jsonify({"message": "Item deleted"}), 200
-    else:
-        return jsonify({"error": "Item not found"}), 404
+        # Attempt to create the login credentials in the database
+        db.credentials.insert_one({
+            "user_id": user_id,
+            "email": data.get("email"),
+            "password": hashed_password
+        })
+        print(f"    {request.remote_addr}: credentials created, {user_id}")
+
+        # Attempt to create an initial bearer token with a 10min expiry
+        nonce = generate_nonce()
+        created_timestamp = int(time.time())
+        expiry_timestamp = int(time.time())+600
+        db.bearer_tokens.insert_one({
+            "user_id": user_id,
+            "token": nonce,
+            "expiry": expiry_timestamp,
+            "active": True,
+            "created": created_timestamp,
+            "remote_addr": request.remote_addr
+        })
+        print(f"    {request.remote_addr}: bearer token created, {nonce}")
+
+        return jsonify({
+            "success": True,
+            "message": "Farmer registered successfully",
+            "data": {
+                "userId": str(user_id),
+                "email": data.get("email"),
+                "firstName": data.get("firstName"),
+                "lastName": data.get("lastName"),
+                "token": nonce
+            }
+        }), 201
+    except exc.BadRequest as e:
+        return jsonify({"error": e.message}), 400
+    except Exception as e:
+        print(e)
+        return jsonify({"error": "The server encountered an unexpected condition that prevented it from fulfilling the request."}), 500
+
+@app.route("/auth/login", methods=["POST"])
+def auth_login():
+    """
+        Login a farmer account
+    
+        Endpoint: POST /auth/login
+
+        Request Body:
+        {
+            "email": "farmer@example.com",
+            "password": "securePassword123"
+        }
+
+        Response (200 OK):
+        {
+            "success": true,
+            "message": "Farmer authenticated successfully",
+            "data": {
+                "userId": "uuid-string",
+                "email": "farmer@example.com",
+                "token": "jwt-token-string"
+            }
+        }
+    """
+    try:
+        # Try to get the request body and make sure it is valid
+        data = request.form
+        print(f"{request.remote_addr}: Request body received, {data}")
+
+        for key in ["email","password"]:
+            if not key in list(data.keys()):
+                raise exc.BadRequest(f"Missing parameter, {key}")
+            
+        # Connect to the database 
+        db = client.authentication
+        
+        # Salt and hash the password
+        hashed_password = hashlib.sha256((data.get("password") + salt).encode()).hexdigest()
+
+        # Check if the email and password is correct
+        existing_credentials = db.credentials.find_one({
+            "email": data.get("email"), "password": hashed_password
+        })
+
+        if existing_credentials is None:
+            print(f"    {request.remote_addr}: Incorrect email or password, {data.get("email")}")
+            raise exc.BadRequest(f"Incorrect email or password")
+        
+        user_id = existing_credentials["user_id"]
+
+        # Deactivate all of the existing tokens for this IP
+        db.bearer_tokens.update_many({
+            "user_id": user_id,
+            "remote_addr": request.remote_addr,
+            "active": True
+        }, {
+            "$set": {"active": False}
+        })
+        
+        # Attempt to create a new bearer token with a 10 minute expiry
+        nonce = generate_nonce()
+        created_timestamp = int(time.time())
+        expiry_timestamp = int(time.time())+600
+        db.bearer_tokens.insert_one({
+            "user_id": user_id,
+            "token": nonce,
+            "expiry": expiry_timestamp,
+            "active": True,
+            "created": created_timestamp,
+            "remote_addr": request.remote_addr
+        })
+        print(f"    {request.remote_addr}: bearer token created, {nonce}")
+
+        user = db.users.find_one({
+            "email": data.get("email")
+        })
+        firstName = user["firstName"]
+        lastName = user["lastName"]
+        return jsonify({
+            "success": True,
+            "message": "Farmer authenticated successfully",
+            "data": {
+                "userId": str(user_id),
+                "email": data.get("email"),
+                "firstName": firstName,
+                "lastName": lastName,
+                "token": nonce
+            }
+        }), 200
+    except exc.BadRequest as e:
+        return jsonify({"error": e.message}), 400
+    except Exception as e:
+        print(e)
+        return jsonify({"error": "The server encountered an unexpected condition that prevented it from fulfilling the request."}), 500
+
+@app.route('/auth/check_token', methods=["GET"])
+def auth_check_token():
+    try:
+        request_time = int(time.time())
+
+        data = request.args
+        print(f"{request.remote_addr}: Request body received, {data}")
+
+        for key in ["token"]:
+            if not key in list(data.keys()):
+                raise exc.BadRequest(f"Missing parameter, {key}")
+        
+        if not check_bearer_valid(data["token"], request_time, request.remote_addr):
+            print(f"    {request.remote_addr}: Bearer token not valid as of {str(request_time)}")
+            raise exc.Unauthorized(f"Bearer token not valid as of {str(request_time)}")
+            
+        return jsonify({
+            "success": True,
+            "message": f"Token is valid as of {str(request_time)}"
+        }), 200
+    except exc.BadRequest as e:
+        return jsonify({"error": e.message}), 400
+    except exc.Unauthorized as e:
+        return jsonify({"error": e.message}), 401
+    except exc.Forbidden as e:
+        return jsonify({"error": e.message}), 403
+    except Exception as e:
+        print(e)
+        return jsonify({"error": "The server encountered an unexpected condition that prevented it from fulfilling the request."}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
