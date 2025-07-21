@@ -48,7 +48,6 @@ export default function Filters({
   ];
 
   const isAllSelected = Object.values(categories).every((value) => value);
-  const isSomeSelected = Object.values(categories).some((value) => value);
 
   return (
     <div className="w-full border-t border-gray-200 pt-4 mt-4">

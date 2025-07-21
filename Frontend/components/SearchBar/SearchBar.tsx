@@ -6,80 +6,137 @@ import { Button } from "../ui/button";
 import { Globe2, ChevronDown, ChevronUp } from "lucide-react";
 import Filters from "./Filters";
 
-export default function SearchBar() {
-  const [productQuery, setProductQuery] = useState("");
+interface SearchBarProps {
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
+  onSearch?: () => void;
+  distanceWithin?: number;
+  onDistanceChange?: (distance: number) => void;
+  categories?: {
+    fruits: boolean;
+    vegetables: boolean;
+    legumes: boolean;
+    nutsSeeds: boolean;
+    grain: boolean;
+    livestock: boolean;
+    seafood: boolean;
+    eggsAndMilk: boolean;
+    coffeeAndTea: boolean;
+    herbsAndSpices: boolean;
+    forestry: boolean;
+    honey: boolean;
+  };
+  onCategoryChange?: (category: keyof SearchBarProps['categories'], checked: boolean) => void;
+  onSelectAll?: () => void;
+}
+
+export default function SearchBar({
+  searchQuery: externalSearchQuery,
+  onSearchChange: externalOnSearchChange,
+  onSearch: externalOnSearch,
+  distanceWithin: externalDistanceWithin,
+  onDistanceChange: externalOnDistanceChange,
+  categories: externalCategories,
+  onCategoryChange: externalOnCategoryChange,
+  onSelectAll: externalOnSelectAll,
+}: SearchBarProps = {}) {
+  // Internal state (used when no external props provided)
+  const [internalProductQuery, setInternalProductQuery] = useState("");
   const [locationQuery, setLocationQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [distanceWithin, setDistanceWithin] = useState(50);
-  const [categories, setCategories] = useState({
-    fruits: false,
-    vegetables: false,
-    legumes: false,
-    nutsSeeds: false,
-    grain: false,
-    livestock: false,
-    seafood: false,
-    eggsAndMilk: false,
-    coffeeAndTea: false,
-    herbsAndSpices: false,
-    forestry: false,
-    honey: false,
+  const [internalDistanceWithin, setInternalDistanceWithin] = useState(50);
+  const [internalCategories, setInternalCategories] = useState({
+    fruits: true,
+    vegetables: true,
+    legumes: true,
+    nutsSeeds: true,
+    grain: true,
+    livestock: true,
+    seafood: true,
+    eggsAndMilk: true,
+    coffeeAndTea: true,
+    herbsAndSpices: true,
+    forestry: true,
+    honey: true,
   });
+
+  // Use external props if provided, otherwise use internal state
+  const productQuery = externalSearchQuery !== undefined ? externalSearchQuery : internalProductQuery;
+  const distanceWithin = externalDistanceWithin !== undefined ? externalDistanceWithin : internalDistanceWithin;
+  const categories = externalCategories || internalCategories;
 
   const handleCategoryChange = (
     category: keyof typeof categories,
     checked: boolean
   ) => {
-    setCategories((prev) => ({
-      ...prev,
-      [category]: checked,
-    }));
+    if (externalOnCategoryChange) {
+      externalOnCategoryChange(category as keyof SearchBarProps['categories'], checked);
+    } else {
+      setInternalCategories((prev) => ({
+        ...prev,
+        [category]: checked,
+      }));
+    }
   };
 
   const handleSelectAll = () => {
-    const allSelected = Object.values(categories).every((value) => value);
-    const newValue = !allSelected;
-    setCategories({
-      fruits: newValue,
-      vegetables: newValue,
-      legumes: newValue,
-      nutsSeeds: newValue,
-      grain: newValue,
-      livestock: newValue,
-      seafood: newValue,
-      eggsAndMilk: newValue,
-      coffeeAndTea: newValue,
-      herbsAndSpices: newValue,
-      forestry: newValue,
-      honey: newValue,
-    });
+    if (externalOnSelectAll) {
+      externalOnSelectAll();
+    } else {
+      const allSelected = Object.values(categories).every((value) => value);
+      const newValue = !allSelected;
+      setInternalCategories({
+        fruits: newValue,
+        vegetables: newValue,
+        legumes: newValue,
+        nutsSeeds: newValue,
+        grain: newValue,
+        livestock: newValue,
+        seafood: newValue,
+        eggsAndMilk: newValue,
+        coffeeAndTea: newValue,
+        herbsAndSpices: newValue,
+        forestry: newValue,
+        honey: newValue,
+      });
+    }
   };
 
-  const handleFindFarmers = () => {
-    const params = new URLSearchParams();
+  const handleSearch = () => {
+    if (externalOnSearch) {
+      externalOnSearch();
+    } else {
+      // Default behavior for landing page
+      const params = new URLSearchParams();
 
-    if (productQuery.trim()) {
-      params.append("product", productQuery.trim());
-    }
-
-    if (locationQuery.trim()) {
-      params.append("location", locationQuery.trim());
-    }
-
-    params.append("distance", distanceWithin.toString());
-
-    // Add selected categories
-    Object.entries(categories).forEach(([key, value]) => {
-      if (value) {
-        params.append("categories", key);
+      if (productQuery.trim()) {
+        params.append("q", productQuery.trim());
       }
-    });
 
-    const searchUrl = `/search?${params.toString()}`;
-    console.log("Search URL:", searchUrl); // For debugging
+      if (locationQuery.trim()) {
+        params.append("location", locationQuery.trim());
+      }
 
-    // Navigate to search results page
-    // window.location.href = searchUrl; // Uncomment when ready to navigate
+      if (distanceWithin !== 50) {
+        params.append("distance", distanceWithin.toString());
+      }
+
+      // Add selected categories
+      const selectedCategories = Object.entries(categories)
+        .filter(([, value]) => value)
+        .map(([key]) => key);
+      
+      const allCategories = Object.keys(categories);
+      const allSelected = selectedCategories.length === allCategories.length;
+      
+      // Only add categories to URL if not all are selected
+      if (!allSelected && selectedCategories.length > 0) {
+        params.append("categories", selectedCategories.join(','));
+      }
+
+      const searchUrl = `/search?${params.toString()}`;
+      window.location.href = searchUrl;
+    }
   };
 
   return (
@@ -91,7 +148,13 @@ export default function SearchBar() {
             className="rounded-l-sm rounded-r-none h-12"
             type="text"
             value={productQuery}
-            onChange={(e) => setProductQuery(e.target.value)}
+            onChange={(e) => {
+              if (externalOnSearchChange) {
+                externalOnSearchChange(e.target.value);
+              } else {
+                setInternalProductQuery(e.target.value);
+              }
+            }}
           />
           <label className="relative">
             <Globe2 className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 stroke-1" />
@@ -105,7 +168,7 @@ export default function SearchBar() {
           </label>
         </div>
 
-        <Button className="h-full" onClick={handleFindFarmers}>
+        <Button className="h-full" onClick={handleSearch}>
           Find Local Farmers
         </Button>
       </div>
@@ -132,7 +195,7 @@ export default function SearchBar() {
         <Filters
           distanceWithin={distanceWithin}
           categories={categories}
-          onDistanceChange={setDistanceWithin}
+          onDistanceChange={externalOnDistanceChange || setInternalDistanceWithin}
           onCategoryChange={handleCategoryChange}
           onSelectAll={handleSelectAll}
         />
