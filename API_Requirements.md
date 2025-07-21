@@ -44,15 +44,48 @@ Authorization: Bearer <jwt_token>
 
 ```json
 {
-  "success": true,
-  "message": "Farmer registered successfully",
   "data": {
-    "userId": "uuid-string",
-    "email": "farmer@example.com",
-    "firstName": "John",
-    "lastName": "Doe",
-    "token": "jwt-token-string"
-  }
+    "birthday": "",
+    "created_at": 1654012591514,
+    "email_addresses": [
+      {
+        "email_address": "example@example.org",
+        "id": "idn_29w83yL7CwVlJXylYLxcslromF1",
+        "linked_to": [],
+        "object": "email_address",
+        "verification": {
+          "status": "verified",
+          "strategy": "ticket"
+        }
+      }
+    ],
+    "external_accounts": [],
+    "external_id": "567772",
+    "first_name": "Example",
+    "gender": "",
+    "id": "user_29w83sxmDNGwOuEthce5gg56FcC",
+    "image_url": "https://img.clerk.com/xxxxxx",
+    "last_name": "Example",
+    "last_sign_in_at": 1654012591514,
+    "object": "user",
+    "password_enabled": true,
+    "phone_numbers": [],
+    "primary_email_address_id": "idn_29w83yL7CwVlJXylYLxcslromF1",
+    "primary_phone_number_id": null,
+    "primary_web3_wallet_id": null,
+    "private_metadata": {},
+    "profile_image_url": "https://www.gravatar.com/avatar?d=mp",
+    "public_metadata": {},
+    "two_factor_enabled": false,
+    "unsafe_metadata": {},
+    "updated_at": 1654012591835,
+    "username": null,
+    "web3_wallets": []
+  },
+  "instance_id": "ins_123",
+  "object": "event",
+  "timestamp": 1654012591835,
+  "type": "user.created"
 }
 ```
 
@@ -104,8 +137,8 @@ Authorization: Bearer <jwt_token>
   },
   "contact_email": "farmer@example.com",
   "contact_phone": "+61123456789",
-  "opening_hours": "TBD",  
-  "produce": [],
+  "opening_hours": "TBD",
+  "produce": []
 }
 ```
 
@@ -126,7 +159,7 @@ Authorization: Bearer <jwt_token>
     },
     "contact_email": "farmer@example.com",
     "contact_phone": "+61123456789",
-    "opening_hours": "TBD",  
+    "opening_hours": "TBD",
     "produce": [],
     "ownerId": "uuid-string",
     "createdAt": "2024-01-15T10:30:00Z"
@@ -161,10 +194,10 @@ Authorization: Bearer <jwt_token>
         "description": "Organic produce farm specializing in vegetables",
         "address": {
           "city": "Brisbane",
-          "state": "QLD",
+          "state": "QLD"
         },
-        "opening_hours": "TBD",  
-        "produce": [],
+        "opening_hours": "TBD",
+        "produce": []
       }
     ],
     "pagination": {
@@ -188,7 +221,7 @@ Authorization: Bearer <jwt_token>
 ```json
 {
   "success": true,
-  "data": {  
+  "data": {
     "farmId": "uuid-string",
     "name": "Green Valley Farm",
     "description": "Organic produce farm specializing in vegetables",
@@ -200,7 +233,7 @@ Authorization: Bearer <jwt_token>
     },
     "contact_email": "farmer@example.com",
     "contact_phone": "+61123456789",
-    "opening_hours": "TBD",  
+    "opening_hours": "TBD",
     "produce": [],
     "ownerId": "uuid-string",
     "createdAt": "2024-01-15T10:30:00Z"
@@ -262,14 +295,14 @@ Authorization: Bearer <jwt_token>
   "name": "Organic Tomatoes",
   "category": ["vegetables"],
   "description": "Fresh organic roma tomatoes",
-  "pricePerUnit": 4.50,
+  "pricePerUnit": 4.5,
   "unit": "kg",
   "minimumOrderQuantity": 5,
   "minimumOrderUnit": "kg",
   "availabilityWindows": [
     {
       "startMonth": 11,
-      "endMonth": 2,
+      "endMonth": 2
     }
   ],
   "images": ["image1.jpg", "image2.jpg"]
@@ -286,14 +319,14 @@ Authorization: Bearer <jwt_token>
     "name": "Organic Tomatoes",
     "category": ["vegetables"],
     "description": "Fresh organic roma tomatoes",
-    "pricePerUnit": 4.50,
+    "pricePerUnit": 4.5,
     "unit": "kg",
     "minimumOrderQuantity": 5,
     "minimumOrderUnit": "kg",
     "availabilityWindows": [
       {
         "startMonth": 11,
-        "endMonth": 2,
+        "endMonth": 2
       }
     ],
     "farmId": "farm-uuid",
@@ -331,14 +364,14 @@ Authorization: Bearer <jwt_token>
         "name": "Organic Tomatoes",
         "category": ["vegetables"],
         "description": "Fresh organic roma tomatoes",
-        "pricePerUnit": 4.50,
+        "pricePerUnit": 4.5,
         "unit": "kg",
         "minimumOrderQuantity": 5,
         "minimumOrderUnit": "kg",
         "availabilityWindows": [
           {
             "startMonth": 11,
-            "endMonth": 2,
+            "endMonth": 2
           }
         ],
         "farm": {
@@ -377,14 +410,14 @@ Authorization: Bearer <jwt_token>
     "name": "Organic Tomatoes",
     "category": ["vegetables"],
     "description": "Fresh organic roma tomatoes",
-    "pricePerUnit": 4.50,
+    "pricePerUnit": 4.5,
     "unit": "kg",
     "minimumOrderQuantity": 5,
     "minimumOrderUnit": "kg",
     "availabilityWindows": [
       {
         "startMonth": 11,
-        "endMonth": 2,
+        "endMonth": 2
       }
     ],
     "farm": {
@@ -396,7 +429,7 @@ Authorization: Bearer <jwt_token>
         "state": "QLD",
         "zipCode": "4000"
       },
-      "ownerId": "uuid-string", 
+      "ownerId": "uuid-string"
     },
     "images": ["image1.jpg", "image2.jpg"],
     "createdAt": "2024-01-15T10:30:00Z"
@@ -423,7 +456,7 @@ Authorization: Bearer <jwt_token>
         "produceId": "uuid-string",
         "name": "Organic Tomatoes",
         "category": "vegetables",
-        "pricePerUnit": 4.50,
+        "pricePerUnit": 4.5,
         "unit": "kg",
         "currentlyAvailable": true
       }

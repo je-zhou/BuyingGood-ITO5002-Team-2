@@ -31,11 +31,16 @@ export default function WhatsInItForYou() {
 
       {/* Image */}
 
-      <Image
-        src={""}
-        alt="img"
-        className="border h-full w-full rounded"
-      ></Image>
+      <div className="relative h-full w-full">
+        <Image
+          src={"/logo.png"}
+          // src={""}
+          alt="img"
+          fill
+          objectFit="contain"
+          className="border h-full w-full rounded"
+        ></Image>
+      </div>
     </div>
   );
 }
