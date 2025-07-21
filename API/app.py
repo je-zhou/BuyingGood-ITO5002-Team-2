@@ -422,6 +422,64 @@ def auth_check_token():
             }
         ), 500
 
+ 
+""" Authenticated Endpoints """
+
+@app.route('/auth/profile', methods=["GET"])
+def auth_profile():
+    pass
+
+@app.route('/farms', methods=["POST"])
+def farms():
+    pass
+
+@app.route('/farms/<str:farmId>', methods=["PUT"])
+def get_farm(farmId : str):
+    pass
+
+@app.route('/farms/<str:farmId>', methods=["DELETE"])
+def delete_farm(farmId : str):
+    pass
+
+@app.route('/farms/<str:farmId>/produce', methods=["POST"])
+def add_produce(farmId : str):
+    pass
+
+@app.route("/produce/<str:produceId>", methods=["PUT"])
+def update_produce(produceId : str):
+    pass
+
+@app.route("/produce/<str:produceId>", methods=["DELETE"])
+def delete_produce(produceId : str):
+    pass
+
+
+""" Unauthenticated Endpoints """
+
+@app.route('/farms', methods=["GET"])
+def auth_profile():
+    pass
+
+@app.route('/farms/<str:farmId>', methods=["GET"])
+def auth_profile(farmId : str):
+    pass
+
+@app.route('/produce', methods=["GET"])
+def auth_profile():
+    pass
+
+@app.route('/produce/<str:produceId>', methods=["GET"])
+def auth_profile(produceId : str):
+    pass
+
+@app.route('/farms/<str:farmId>/produce', methods=["GET"])
+def auth_profile(farmId : str):
+    pass
+
+@app.route('/categories', methods=["GET"])
+def auth_profile():
+    pass
+
 
 """ Run Flask App """
 
