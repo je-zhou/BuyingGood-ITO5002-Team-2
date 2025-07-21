@@ -126,4 +126,4 @@ df_detail_clean['date_last_modified'] = df_detail_clean['date_last_modified'].as
 df_detail_clean['date_retired'] = df_detail_clean['date_retired'].astype('datetime64[ns]')
 
 # Export cleaned data to csv
-df_detail_clean.to_csv('QLD_ADDRESS_SITE_GEOCODE_CLEAN.csv', index = False)
+df_detail_clean.to_csv('QLD_ADDRESS_DETAIL_CLEAN.csv', index = False)
