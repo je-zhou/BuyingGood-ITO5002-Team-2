@@ -42,12 +42,13 @@ Authorization: Bearer <jwt_token>
 
 **Response (201 Created):**
 
-`````json
+```json
 {
   "success": true,
   "data": {...
   }
 }
+```
 
 ### 1.2 Update Farmer Details
 
@@ -114,12 +115,14 @@ Authorization: Bearer <jwt_token>
 
 **Response (200 OK):**
 
-````json
+```json
 {
   "success": true,
   "data": {...
   }
 }
+
+```
 
 ### 1.3 Delete Farmer Details
 
@@ -150,10 +153,11 @@ Authorization: Bearer <jwt_token>
 
 **Response (200 OK):**
 
-````json
+```json
 {
   "success": true,
 }
+```
 
 ### 1.3 Get User Profile
 
@@ -175,7 +179,7 @@ Authorization: Bearer <jwt_token>
     "updatedAt": "2024-01-15T10:30:00Z"
   }
 }
-`````
+```
 
 ---
 
