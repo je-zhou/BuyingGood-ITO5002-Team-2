@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SearchBar from "@/components/SearchBar/SearchBar";
+import ProductHoverCard from "@/components/ProductHoverCard/ProductHoverCard";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -11,20 +12,34 @@ interface Farm {
   name: string;
   description: string;
   address: {
+    street: string;
     city: string;
     state: string;
+    zipCode: string;
   };
+  contact_email: string;
+  contact_phone: string;
   opening_hours: string;
   produce: Produce[];
+  ownerId: string;
+  createdAt: string;
 }
 
 interface Produce {
   id: string;
   name: string;
-  price: number;
+  category: string[];
+  description: string;
+  pricePerUnit: number;
   unit: string;
-  availability: string;
-  category: string;
+  minimumOrderQuantity: number;
+  minimumOrderUnit: string;
+  availabilityWindows: {
+    startMonth: number;
+    endMonth: number;
+  }[];
+  images: string[];
+  createdAt: string;
 }
 
 interface SearchResponse {
@@ -378,36 +393,8 @@ export default function SearchPage() {
                           {/* Hover Card */}
                           {hoveredFarm === farm.farmId &&
                             hoveredProduce?.id === produce.id && (
-                              <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-10">
-                                <h3 className="font-semibold text-gray-900 mb-2">
-                                  {produce.name}
-                                </h3>
-                                <div className="space-y-1 text-sm text-gray-600">
-                                  <p>
-                                    📍 {farm.address.city}, {farm.address.state}
-                                  </p>
-                                  <div className="flex items-center gap-2">
-                                    <div className="flex">
-                                      {[...Array(5)].map((_, i) => (
-                                        <span
-                                          key={i}
-                                          className="text-green-500"
-                                        >
-                                          ●
-                                        </span>
-                                      ))}
-                                    </div>
-                                    <span>{produce.availability}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center pt-2 border-t">
-                                    <span className="font-semibold">
-                                      ${produce.price} / {produce.unit}
-                                    </span>
-                                    <Button size="sm" className="text-xs">
-                                      ❤️
-                                    </Button>
-                                  </div>
-                                </div>
+                              <div className="absolute top-full right-0 mt-2 z-10">
+                                <ProductHoverCard produce={produce} />
                               </div>
                             )}
                         </div>
