@@ -36,7 +36,17 @@ export default function Navbar() {
           </Link>
         </SignedOut>
         <SignedIn>
-          <UserButton />
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard">
+              <Button
+                variant={"outline"}
+                className="border-primary text-primary font-medium cursor-pointer hover:bg-primary hover:text-white"
+              >
+                Dashboard
+              </Button>
+            </Link>
+            <UserButton />
+          </div>
         </SignedIn>
       </div>
     </nav>
