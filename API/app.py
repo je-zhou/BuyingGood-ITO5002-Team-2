@@ -7,6 +7,7 @@ mongodb_pass = os.getenv('mongodb_pass')
 mongodb_uri = os.getenv('mongodb_uri')
 mongodb_appname = os.getenv('mongodb_appname')
 salt = os.getenv('salt')
+clerk_secret_key = os.getenv('clerk_secret_key')
 
 
 """ MongoDB Setup """
@@ -30,78 +31,40 @@ except Exception as e:
 
 """ Flask Setup """
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, g
 import exceptions as exc
-import hashlib
 import datetime
-import uuid
 import numpy as np
 
 app = Flask(__name__)
 
 
+""" Clerk Authentication """
+
+from clerk_backend_api import Clerk
+from functools import wraps
+
+clerk = Clerk()
+
+# This decorator protects routes by verifying the Clerk session token
+def clerk_auth_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            # The session token is passed in the Authorization header
+            claims = clerk.verify_token(request.headers.get("Authorization").split(" ")[1])
+            if not claims:
+                raise exc.Unauthorized("Invalid authentication token.")
+            # Make the user_id available to the route via Flask's 'g' object
+            g.user_id = claims.get("sub")
+        except Exception as e:
+            print(f"Authentication error: {e}")
+            return jsonify({"success": False, "error": {"code": "401", "message": "UNAUTHORIZED", "details": "Authentication token is missing or invalid."}}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 """ Helper Functions """
-
-def generate_nonce():
-    """Generate nonce."""
-    nonce = uuid.uuid1()
-    return nonce.hex
-
-def check_bearer_valid(bearer_token : str, request_time, remote_addr : str):
-    """
-        Check if the provided email and bearer_token are valid
-
-        parameters:
-            bearer_token : str, the token that the user is trying to authenticate with
-            request_time : datetime, the time that the request was sent
-        
-        return:
-            True | False, True if the bearer token is valid, False if it is not valid
-            
-    """
-    try:
-        db = client.authentication
-
-        document = db.bearer_tokens.find_one({
-            "token": bearer_token,
-            "expiry": { "$gt" : request_time },
-            "active": True,
-            "remote_addr": remote_addr
-        })
-
-        # Add time to the bearer token to keep it alive
-        if document is not None:
-            db.bearer_tokens.update_one({
-                "_id": document["_id"]
-            },{"$set":{
-                "expiry": request_time + datetime.timedelta(minutes=10)
-            }})
-        
-        return document is not None
-    except Exception as e:
-        raise(e)
-
-def check_authentication(headers, request_time, remote_addr : str):
-    db = client.authentication
-
-    # Extract the bearer token from the headers
-    bearer = headers.get('Authorization')
-    token = bearer.split()[1]
-
-    # Check if the provided token is valid
-    if not check_bearer_valid(token, request_time, remote_addr):
-        print(f"    {remote_addr}: Bearer token not valid as of {str(request_time)}")
-        raise exc.Unauthorized(f"Bearer token not valid as of {str(request_time)}")
-
-    # Find the user associated with the bearer token
-    token_entry = db.bearer_tokens.find_one({
-        "token": token,
-        "expiry": { "$gt" : request_time },
-        "active": True,
-        "remote_addr": remote_addr
-    })
-
-    return token_entry["user_id"]
 
 def mongo_to_dict(obj, id_name="id", exclusion_list=[]):
     """
@@ -149,14 +112,13 @@ def mongo_to_dict(obj, id_name="id", exclusion_list=[]):
 @app.route("/auth/register", methods=["POST"])
 def auth_register():
     """
-        Register a new farmer account
+        Register a new farmer email and return a user id
     
         Endpoint: POST /auth/register
 
         Request Body:
         {
             "email": "farmer@example.com",
-            "password": "securePassword123",
             "firstName": "John",
             "lastName": "Doe",
             "phoneNumber": "+1234567890"
@@ -164,7 +126,6 @@ def auth_register():
 
         Response (201 Created)
     """
-
     try:
         request_time = datetime.datetime.now()
         db = client.authentication
@@ -173,7 +134,7 @@ def auth_register():
         data = request.form
         print(f"{request.remote_addr}: Request body received, {data}")
 
-        for key in ["email","password","firstName","lastName","phoneNumber"]:
+        for key in ["email","firstName","lastName","phoneNumber"]:
             if not key in list(data.keys()):
                 raise exc.BadRequest(f"Missing parameter, {key}")
         
@@ -182,42 +143,17 @@ def auth_register():
         if existing_user is not None:
             print(f"    {request.remote_addr}: Email is already registered, {data.get("email")}")
             raise exc.BadRequest(f"Email is already registered, {data.get("email")}")
-        
-        # Salt and hash the password
-        hashed_password = hashlib.sha256((data.get("password") + salt).encode()).hexdigest()
 
         # Attempt to create the user in the database
         user_id = db.users.insert_one({
             "email": data.get("email"),
             "firstName": data.get("firstName"),
             "lastName": data.get("lastName"),
-            "phoneNumber": data.get("phoneNumber"),
+            "phoneNumbers": [data.get("phoneNumber")],
             "createdAt": request_time,
             "modifiedAt": request_time
         }).inserted_id
         print(f"    {request.remote_addr}: user_id created, {user_id}")
-
-        # Attempt to create the login credentials in the database
-        db.credentials.insert_one({
-            "user_id": user_id,
-            "email": data.get("email"),
-            "password": hashed_password
-        })
-        print(f"    {request.remote_addr}: credentials created, {user_id}")
-
-        # Attempt to create an initial bearer token with a 10min expiry
-        nonce = generate_nonce()
-        created_timestamp = request_time
-        expiry_timestamp = request_time + datetime.timedelta(minutes=10)
-        db.bearer_tokens.insert_one({
-            "user_id": user_id,
-            "token": nonce,
-            "expiry": expiry_timestamp,
-            "active": True,
-            "created": created_timestamp,
-            "remote_addr": request.remote_addr
-        })
-        print(f"    {request.remote_addr}: bearer token created, {nonce}")
 
         return jsonify({
             "success": True,
@@ -226,8 +162,7 @@ def auth_register():
                 "userId": str(user_id),
                 "email": data.get("email"),
                 "firstName": data.get("firstName"),
-                "lastName": data.get("lastName"),
-                "token": nonce
+                "lastName": data.get("lastName")
             }
         }), 201
     except exc.BadRequest as e:
@@ -276,86 +211,163 @@ def auth_register():
             }
         ), 500
 
-@app.route("/auth/login", methods=["POST"])
-def auth_login():
+@app.route("/auth/update", methods=["POST"])
+@clerk_auth_required
+def auth_update():
     """
-        Login a farmer account
+        Update details of a farmer account
     
-        Endpoint: POST /auth/login
+        Endpoint: POST /auth/update
 
         Request Body:
         {
-            "email": "farmer@example.com",
-            "password": "securePassword123"
+            "birthday": "%d/%m/%Y",
+            "first_name": "",
+            "last_name": "",
+            "gender": "",
+            "phone_numbers": [],
+            "email_addressses": [{"email_address":"","id":""}],
+            "primary_email_address_id": "",
+            "profile_image_url": "",
+            "updated_at": 1654012824306,
+            "image_url": ""
         }
 
-        Response (200 OK)
+        Response (201 Created)
     """
-
     try:
-        request_time = datetime.datetime.now()
         db = client.authentication
-        
+
         # Try to get the request body and make sure it is valid
         data = request.form
         print(f"{request.remote_addr}: Request body received, {data}")
-
-        for key in ["email","password"]:
-            if not key in list(data.keys()):
-                raise exc.BadRequest(f"Missing parameter, {key}")
         
-        # Salt and hash the password
-        hashed_password = hashlib.sha256((data.get("password") + salt).encode()).hexdigest()
+        # Get the user id from the authentication decorator
+        user_id = g.user_id
 
-        # Check if the email and password is correct
-        existing_credentials = db.credentials.find_one({
-            "email": data.get("email"), "password": hashed_password
-        })
+        # Check if the user exists
+        existing_user = db.users.find_one({"_id": ObjectId(user_id)})
+        if existing_user is None:
+            print(f"    {request.remote_addr}: User ID does not exist, {user_id}")
+            raise exc.BadRequest(f"User ID does not exist, {user_id}")
 
-        if existing_credentials is None:
-            print(f"    {request.remote_addr}: Incorrect email or password, {data.get("email")}")
-            raise exc.BadRequest(f"Incorrect email or password")
-        
-        user_id = existing_credentials["user_id"]
+        phone_number = ""
+        try:
+            phone_number = data.get("phone_numbers")[0] if len(data.get("phone_numbers")) > 0 else ""
+        except:
+            pass
 
-        # Deactivate all of the existing tokens for this IP
-        db.bearer_tokens.update_many({
-            "user_id": user_id,
-            "remote_addr": request.remote_addr,
-            "active": True
-        }, {
-            "$set": {"active": False}
-        })
-        
-        # Attempt to create a new bearer token with a 10 minute expiry
-        nonce = generate_nonce()
-        created_timestamp = request_time
-        expiry_timestamp = request_time + datetime.timedelta(minutes=10)
-        db.bearer_tokens.insert_one({
-            "user_id": user_id,
-            "remote_addr": request.remote_addr,
-            "expiry": expiry_timestamp,
-            "created": created_timestamp,
-            "token": nonce,
-            "active": True
-        })
-        print(f"    {request.remote_addr}: bearer token created, {nonce}")
+        email_address = ""
+        for email in data.get("email_addressses"):
+            if email["id"] == data.get("primary_email_address_id"):
+                email_address = email["email_address"]
 
-        user = db.users.find_one({
-            "email": data.get("email")
-        })
-        firstName = user["firstName"]
-        lastName = user["lastName"]
+        # Attempt to update the users details in the database
+        user_id = db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {
+                '$set': {
+                    "firstName": data.get("first_name"),
+                    "lastName": data.get("last_name"),
+                    "birthday": datetime.datetime.strptime(data.get("birthday"), "%d/%m/%Y").date() if data.get("birthday") != "" else "",
+                    "gender": data.get("gender"),
+                    "phoneNumber": phone_number,
+                    "email": email_address,
+                    "profileImage": data.get("profile_image_url"),
+                    "updatedAt": datetime.datetime.fromtimestamp(data.get("updated_at"))
+                }
+            }
+        )
+        print(f"    {request.remote_addr}: user updated, {user_id}")
+
         return jsonify({
             "success": True,
-            "message": "Farmer authenticated successfully",
-            "data": {
-                "userId": str(user_id),
-                "email": data.get("email"),
-                "firstName": firstName,
-                "lastName": lastName,
-                "token": nonce
+            "message": "Farmer updated successfully"
+        }), 200
+    except exc.BadRequest as e:
+        return jsonify(
+            {
+                "success": False,
+                "error": {
+                    "code": "400",
+                    "message": "BAD_REQUEST",
+                    "details": e.message
+                }
             }
+        ), 400
+    except exc.Unauthorized as e:
+        return jsonify(
+            {
+                "success": False,
+                "error": {
+                    "code": "401",
+                    "message": "UNAUTHORIZED",
+                    "details": e.message
+                }
+            }
+        ), 401
+    except exc.Forbidden as e:
+        return jsonify(
+            {
+                "success": False,
+                "error": {
+                    "code": "403",
+                    "message": "FORBIDDEN",
+                    "details": e.message
+                }
+            }
+        ), 403
+    except Exception as e:
+        print(e)
+        return jsonify(
+            {
+                "success": False,
+                "error": {
+                    "code": "500",
+                    "message": "INTERNAL_ERROR",
+                    "details": "The server encountered an unexpected condition that prevented it from fulfilling the request."
+                }
+            }
+        ), 500
+
+@app.route("/auth/delete", methods=["POST"])
+@clerk_auth_required
+def auth_delete():
+    """
+        Delete a farmer account
+    
+        Endpoint: POST /auth/update
+
+        Request Body:
+        {
+            "id": "user_29wBMCtzATuFJut8jO2VNTVekS4"
+        }
+
+        Response (201 Created)
+    """
+    try:
+        db = client.authentication
+
+        # Try to get the request body and make sure it is valid
+        data = request.form
+        print(f"{request.remote_addr}: Request body received, {data}")
+        
+        # Get the user id from the authentication decorator
+        user_id = g.user_id
+
+        # Check if the user exists
+        existing_user = db.users.find_one({"_id": user_id})
+        if existing_user is None:
+            print(f"    {request.remote_addr}: User ID does not exist, {user_id}")
+            raise exc.BadRequest(f"User ID does not exist, {user_id}")
+
+        # Deleted the user
+        db.users.delete_one({"_id": ObjectId(user_id)})
+        print(f"    {request.remote_addr}: user deleted, {user_id}")
+
+        return jsonify({
+            "success": True,
+            "message": "Farmer deleted successfully"
         }), 200
     except exc.BadRequest as e:
         return jsonify(
@@ -404,6 +416,7 @@ def auth_login():
         ), 500
 
 @app.route('/auth/profile', methods=["GET"])
+@clerk_auth_required
 def auth_profile():
     """
         Get user profile
@@ -413,12 +426,10 @@ def auth_profile():
         Response (200 OK)
     """
     try:
-        request_time = datetime.datetime.now()
         db = client.authentication
 
-        # Make sure the user is authenticated and get the user_id from the entry
-        headers = request.headers
-        user_id = check_authentication(headers, request_time, request.remote_addr)
+        # Get the user id from the authentication decorator
+        user_id = g.user_id
 
         # Get the user profile
         user = db.users.find_one({
@@ -489,7 +500,7 @@ def farms():
 
             # Make sure the user is authenticated and get the user_id from the entry
             headers = request.headers
-            user_id = check_authentication(headers, request_time, request.remote_addr)
+            user_id = is_signed_in(headers, request.remote_addr)
         elif request.method == "GET":
             """
                 Get list of all registered farms with optional filtering
