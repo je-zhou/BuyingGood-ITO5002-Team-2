@@ -4,11 +4,29 @@ import React, { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useApiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import ProductCard from "@/components/ProductCard/ProductCard";
 import Map from "@/components/ui/map";
-import { MapPin, Phone, Mail, Clock, Edit, Plus, Trash2, ArrowLeft, Eye, Save } from "lucide-react";
+import {
+  MapPin,
+  Phone,
+  Mail,
+  Clock,
+  Edit,
+  Plus,
+  Trash2,
+  ArrowLeft,
+  Eye,
+  Save,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -49,10 +67,18 @@ interface Produce {
   createdAt: string;
 }
 
-export default function FarmManagement({ params }: { params: Promise<{ userId: string; farmId: string }> }) {
+export default function FarmManagement({
+  params,
+}: {
+  params: Promise<{ userId: string; farmId: string }>;
+}) {
   const { user, isLoaded } = useUser();
   const router = useRouter();
-  const [resolvedParams, setResolvedParams] = useState<{ userId: string; farmId: string } | null>(null);
+  const api = useApiClient();
+  const [resolvedParams, setResolvedParams] = useState<{
+    userId: string;
+    farmId: string;
+  } | null>(null);
   const [farm, setFarm] = useState<Farm | null>(null);
   const [farmProduce, setFarmProduce] = useState<Produce[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,77 +94,32 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
 
   const fetchFarm = React.useCallback(async () => {
     if (!resolvedParams || !user) return;
-    
-    // Mock data - replace with real API call when backend is ready
-    const mockFarm: Farm = {
-      farmId: resolvedParams.farmId,
-      name: "Green Valley Farm",
-      description: "Organic vegetables and fruits grown with sustainable farming practices. Family-owned for over 50 years. We specialize in heirloom varieties and use only natural fertilizers and pest control methods. Our commitment to sustainable agriculture ensures that our produce is not only delicious but also environmentally responsible.",
-      address: {
-        street: "123 Farm Road",
-        city: "Springfield",
-        state: "CA",
-        zipCode: "95123"
-      },
-      contact_email: "contact@greenvalleyfarm.com",
-      contact_phone: "(555) 123-4567",
-      opening_hours: "Mon-Sat 8AM-6PM, Sun 10AM-4PM",
-      ownerId: resolvedParams.userId,
-      createdAt: "2024-01-15T08:00:00Z"
-    };
 
-    // Mock produce data
-    const mockProduce: Produce[] = [
-      {
-        id: "produce-001",
-        name: "Organic Tomatoes",
-        category: ["vegetables"],
-        description: "Fresh, vine-ripened organic tomatoes. Perfect for salads, cooking, or canning.",
-        pricePerUnit: 4.50,
-        unit: "lb",
-        minimumOrderQuantity: 5,
-        minimumOrderUnit: "lbs",
-        availabilityWindows: [
-          { startMonth: 5, endMonth: 8 }
-        ],
-        farmId: resolvedParams.farmId,
-        images: [],
-        createdAt: "2024-04-01T09:00:00Z"
-      },
-      {
-        id: "produce-002",
-        name: "Heirloom Carrots",
-        category: ["vegetables"],
-        description: "Colorful heirloom carrots in purple, orange, and yellow varieties.",
-        pricePerUnit: 3.75,
-        unit: "lb",
-        minimumOrderQuantity: 3,
-        minimumOrderUnit: "lbs",
-        availabilityWindows: [
-          { startMonth: 7, endMonth: 11 }
-        ],
-        farmId: resolvedParams.farmId,
-        images: [],
-        createdAt: "2024-04-15T13:10:00Z"
+    try {
+      setLoading(true);
+      
+      // Fetch farm data from the API
+      const farmData = await api.getFarmById(resolvedParams.farmId);      
+      if (farmData.success) {
+        setFarm(farmData.data);
+        setEditedFarm(farmData.data);
       }
-    ];
 
-    // Mock farm images
-    const mockImages = [
-      "/api/placeholder/400/300",
-      "/api/placeholder/400/300",
-      "/api/placeholder/400/300"
-    ];
+      // Fetch farm produce data
+      const produceData = await api.getFarmProduce(resolvedParams.farmId);
+      if (produceData.success) {
+        setFarmProduce(produceData.data.produce || []);
+      }
 
-    // Simulate API delay
-    setTimeout(() => {
-      setFarm(mockFarm);
-      setEditedFarm(mockFarm);
-      setFarmProduce(mockProduce);
-      setFarmImages(mockImages);
+      // For now, use placeholder images
+      setFarmImages(["/logo.png", "/logo.png"]);
+      
+    } catch (error) {
+      console.error('Error fetching farm data:', error);
+    } finally {
       setLoading(false);
-    }, 500);
-  }, [resolvedParams, user]);
+    }
+  }, [resolvedParams, user, api]);
 
   useEffect(() => {
     if (isLoaded && user && resolvedParams) {
@@ -148,69 +129,96 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
 
   const handleDeleteFarm = async () => {
     if (!farm || !resolvedParams) return;
-    
-    if (!confirm(`Are you sure you want to delete "${farm.name}"? This action cannot be undone and will also delete all associated products.`)) {
+
+    if (
+      !confirm(
+        `Are you sure you want to delete "${farm.name}"? This action cannot be undone and will also delete all associated products.`
+      )
+    ) {
       return;
     }
-    
+
     setDeleting(true);
-    
-    // Mock API call - replace with real API call when backend is ready
-    setTimeout(() => {
-      console.log(`Deleting farm ${farm.farmId}`);
+
+    try {
+      await api.deleteFarm(farm.farmId);
+      router.push(`/dashboard/${resolvedParams.userId}/my-farms`);
+    } catch (error) {
+      console.error('Error deleting farm:', error);
+      alert('Failed to delete farm. Please try again.');
+    } finally {
       setDeleting(false);
-      router.push(`/dashboard/${resolvedParams.userId}/farms`);
-    }, 1000);
+    }
   };
 
   const handleDeleteProduce = async (produceId: string) => {
-    if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this product? This action cannot be undone."
+      )
+    ) {
       return;
     }
 
-    // Mock API call - replace with real API call when backend is ready
-    setTimeout(() => {
-      setFarmProduce(prev => prev.filter(p => p.id !== produceId));
-    }, 300);
+    try {
+      await api.deleteProduce(produceId);
+      // Remove from local state after successful deletion
+      setFarmProduce((prev) => prev.filter((p) => p.id !== produceId));
+    } catch (error) {
+      console.error('Error deleting produce:', error);
+      alert('Failed to delete product. Please try again.');
+    }
   };
 
   const handleCreateProduct = () => {
-    router.push(`/dashboard/${resolvedParams?.userId}/farms/${resolvedParams?.farmId}/products/create`);
+    router.push(
+      `/dashboard/${resolvedParams?.userId}/my-farms/${resolvedParams?.farmId}/products/create`
+    );
   };
 
   const handleEditProduct = (product: Produce) => {
-    router.push(`/dashboard/${resolvedParams?.userId}/farms/${resolvedParams?.farmId}/products/${product.id}/edit`);
+    router.push(
+      `/dashboard/${resolvedParams?.userId}/my-farms/${resolvedParams?.farmId}/products/${product.id}/edit`
+    );
   };
 
   const handleFarmInputChange = (field: string, value: string) => {
     if (!editedFarm) return;
-    
-    if (field.startsWith('address.')) {
-      const addressField = field.split('.')[1];
-      setEditedFarm(prev => prev ? {
-        ...prev,
-        address: {
-          ...prev.address,
-          [addressField]: value
-        }
-      } : null);
+
+    if (field.startsWith("address.")) {
+      const addressField = field.split(".")[1];
+      setEditedFarm((prev) =>
+        prev
+          ? {
+              ...prev,
+              address: {
+                ...prev.address,
+                [addressField]: value,
+              },
+            }
+          : null
+      );
     } else {
-      setEditedFarm(prev => prev ? {
-        ...prev,
-        [field]: value
-      } : null);
+      setEditedFarm((prev) =>
+        prev
+          ? {
+              ...prev,
+              [field]: value,
+            }
+          : null
+      );
     }
   };
 
   const handleSaveFarm = async () => {
     if (!editedFarm || !resolvedParams) return;
     setSaving(true);
-    
+
     // Mock API call - replace with real API call when backend is ready
     setTimeout(() => {
       setFarm(editedFarm);
       setSaving(false);
-      console.log('Farm updated:', editedFarm);
+      console.log("Farm updated:", editedFarm);
     }, 1000);
   };
 
@@ -240,30 +248,24 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <Button
-              onClick={() => router.push(`/dashboard/${resolvedParams.userId}/farms`)}
+              onClick={() =>
+                router.push(`/dashboard/${resolvedParams.userId}/my-farms`)
+              }
               variant="outline"
               size="sm"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Farms
             </Button>
-            
+
             <div className="flex gap-2">
-              <Button
-                onClick={handleCreateProduct}
-                variant="outline"
-                size="sm"
-              >
+              <Button onClick={handleCreateProduct} variant="outline" size="sm">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Product
               </Button>
-              <Button
-                onClick={togglePreviewMode}
-                variant="outline"
-                size="sm"
-              >
+              <Button onClick={togglePreviewMode} variant="outline" size="sm">
                 <Eye className="w-4 h-4 mr-2" />
-                {isPreviewMode ? 'Edit Mode' : 'Preview'}
+                {isPreviewMode ? "Edit Mode" : "Preview"}
               </Button>
               {!isPreviewMode && (
                 <Button
@@ -316,7 +318,9 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
           <p className="text-sm text-gray-600 mb-4">Producer Profile Page</p>
           {isPreviewMode ? (
             <>
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">{farm.name}</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                {farm.name}
+              </h1>
               <div className="inline-block bg-gray-100 px-3 py-1 rounded text-sm text-gray-700">
                 {farm.address.city} {farm.address.state}
               </div>
@@ -324,31 +328,52 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
           ) : (
             <div className="space-y-4">
               <div>
-                <Label htmlFor="farmName" className="text-sm font-medium text-gray-700">Farm Name</Label>
+                <Label
+                  htmlFor="farmName"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Farm Name
+                </Label>
                 <Input
                   id="farmName"
-                  value={editedFarm?.name || ''}
-                  onChange={(e) => handleFarmInputChange('name', e.target.value)}
+                  value={editedFarm?.name || ""}
+                  onChange={(e) =>
+                    handleFarmInputChange("name", e.target.value)
+                  }
                   className="text-3xl font-bold border-none px-0 h-auto shadow-none focus-visible:ring-0"
                   placeholder="Enter farm name"
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="city" className="text-sm font-medium text-gray-700">City</Label>
+                  <Label
+                    htmlFor="city"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    City
+                  </Label>
                   <Input
                     id="city"
-                    value={editedFarm?.address.city || ''}
-                    onChange={(e) => handleFarmInputChange('address.city', e.target.value)}
+                    value={editedFarm?.address.city || ""}
+                    onChange={(e) =>
+                      handleFarmInputChange("address.city", e.target.value)
+                    }
                     placeholder="Enter city"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="state" className="text-sm font-medium text-gray-700">State</Label>
+                  <Label
+                    htmlFor="state"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    State
+                  </Label>
                   <Input
                     id="state"
-                    value={editedFarm?.address.state || ''}
-                    onChange={(e) => handleFarmInputChange('address.state', e.target.value)}
+                    value={editedFarm?.address.state || ""}
+                    onChange={(e) =>
+                      handleFarmInputChange("address.state", e.target.value)
+                    }
                     placeholder="Enter state"
                   />
                 </div>
@@ -363,10 +388,18 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
             <Carousel className="w-full max-w-4xl mx-auto">
               <CarouselContent>
                 {farmImages.map((image, index) => (
-                  <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                  <CarouselItem
+                    key={index}
+                    className="md:basis-1/2 lg:basis-1/3"
+                  >
                     <div className="p-1">
                       <div className="aspect-square border border-gray-300 rounded-lg overflow-hidden bg-gray-50 relative">
-                        <Image src={image} alt={`Farm photo ${index + 1}`} className="object-cover" fill />
+                        <Image
+                          src={image}
+                          alt={`Farm photo ${index + 1}`}
+                          className="object-cover"
+                          fill
+                        />
                       </div>
                     </div>
                   </CarouselItem>
@@ -377,7 +410,9 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
             </Carousel>
           ) : (
             <div>
-              <Label className="text-sm font-medium text-gray-700 mb-4 block">Farm Photos</Label>
+              <Label className="text-sm font-medium text-gray-700 mb-4 block">
+                Farm Photos
+              </Label>
               <SimpleImageUpload
                 value={farmImages}
                 onChange={handleImageChange}
@@ -394,18 +429,30 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
           <h2 className="text-xl font-semibold text-gray-900 mb-4">About</h2>
           {isPreviewMode ? (
             <div className="space-y-4">
-              <p className="text-gray-700 leading-relaxed">{farm.description}</p>
               <p className="text-gray-700 leading-relaxed">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                {farm.description}
+              </p>
+              <p className="text-gray-700 leading-relaxed">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+                eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
+                enim ad minim veniam, quis nostrud exercitation ullamco laboris
+                nisi ut aliquip ex ea commodo consequat.
               </p>
             </div>
           ) : (
             <div>
-              <Label htmlFor="description" className="text-sm font-medium text-gray-700">Farm Description</Label>
+              <Label
+                htmlFor="description"
+                className="text-sm font-medium text-gray-700"
+              >
+                Farm Description
+              </Label>
               <Textarea
                 id="description"
-                value={editedFarm?.description || ''}
-                onChange={(e) => handleFarmInputChange('description', e.target.value)}
+                value={editedFarm?.description || ""}
+                onChange={(e) =>
+                  handleFarmInputChange("description", e.target.value)
+                }
                 className="mt-2 min-h-32"
                 placeholder="Describe your farm, what you grow, your farming practices..."
               />
@@ -426,7 +473,7 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
               Add Product
             </Button>
           </div>
-          
+
           {farmProduce.length === 0 ? (
             <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
               <div className="text-gray-400 mb-4">
@@ -443,28 +490,29 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {farmProduce.map((produce) => {
-                const primaryCategory = produce.category[0] || 'other';
-                const categoryIcon = {
-                  'honey': '🍯',
-                  'vegetables': '🥕',
-                  'fruits': '🍎',
-                  'coffeeAndTea': '☕',
-                  'nutsSeeds': '🥜',
-                  'eggsAndMilk': '🥛',
-                  'herbs': '🌿',
-                  'herbsAndSpices': '🌿',
-                  'grain': '🌾',
-                  'legumes': '🫘',
-                  'livestock': '🐄',
-                  'seafood': '🐟',
-                  'forestry': '🌲',
-                  'other': '🌱'
-                }[primaryCategory] || '🌱';
+                const primaryCategory = produce.category[0] || "other";
+                const categoryIcon =
+                  {
+                    honey: "🍯",
+                    vegetables: "🥕",
+                    fruits: "🍎",
+                    coffeeAndTea: "☕",
+                    nutsSeeds: "🥜",
+                    eggsAndMilk: "🥛",
+                    herbs: "🌿",
+                    herbsAndSpices: "🌿",
+                    grain: "🌾",
+                    legumes: "🫘",
+                    livestock: "🐄",
+                    seafood: "🐟",
+                    forestry: "🌲",
+                    other: "🌱",
+                  }[primaryCategory] || "🌱";
 
                 return (
                   <div key={produce.id} className="relative">
-                    <ProductCard 
-                      produce={produce} 
+                    <ProductCard
+                      produce={produce}
                       categoryIcon={categoryIcon}
                     />
                     {/* Management buttons overlay */}
@@ -495,8 +543,10 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
 
         {/* Get in Touch Section */}
         <div className="mb-12">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Get in Touch</h2>
-          
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">
+            Get in Touch
+          </h2>
+
           {/* Contact Info and Map Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             {/* Contact Info Card */}
@@ -507,7 +557,8 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
                     <MapPin className="w-4 h-4 mt-1 text-gray-500" />
                     <div>
                       <div className="font-medium text-blue-600 underline cursor-pointer">
-                        {farm.address.street} {farm.address.state} {farm.address.zipCode}
+                        {farm.address.street} {farm.address.state}{" "}
+                        {farm.address.zipCode}
                       </div>
                     </div>
                   </div>
@@ -527,59 +578,97 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="street" className="text-sm font-medium text-gray-700">Street Address</Label>
+                    <Label
+                      htmlFor="street"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Street Address
+                    </Label>
                     <div className="flex items-center gap-2 mt-1">
                       <MapPin className="w-4 h-4 text-gray-500" />
                       <Input
                         id="street"
-                        value={editedFarm?.address.street || ''}
-                        onChange={(e) => handleFarmInputChange('address.street', e.target.value)}
+                        value={editedFarm?.address.street || ""}
+                        onChange={(e) =>
+                          handleFarmInputChange(
+                            "address.street",
+                            e.target.value
+                          )
+                        }
                         placeholder="Enter street address"
                       />
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="zipCode" className="text-sm font-medium text-gray-700">Zip Code</Label>
+                    <Label
+                      htmlFor="zipCode"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Zip Code
+                    </Label>
                     <Input
                       id="zipCode"
-                      value={editedFarm?.address.zipCode || ''}
-                      onChange={(e) => handleFarmInputChange('address.zipCode', e.target.value)}
+                      value={editedFarm?.address.zipCode || ""}
+                      onChange={(e) =>
+                        handleFarmInputChange("address.zipCode", e.target.value)
+                      }
                       placeholder="Enter zip code"
                       className="mt-1"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="phone" className="text-sm font-medium text-gray-700">Phone</Label>
+                    <Label
+                      htmlFor="phone"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Phone
+                    </Label>
                     <div className="flex items-center gap-2 mt-1">
                       <Phone className="w-4 h-4 text-gray-500" />
                       <Input
                         id="phone"
-                        value={editedFarm?.contact_phone || ''}
-                        onChange={(e) => handleFarmInputChange('contact_phone', e.target.value)}
+                        value={editedFarm?.contact_phone || ""}
+                        onChange={(e) =>
+                          handleFarmInputChange("contact_phone", e.target.value)
+                        }
                         placeholder="Enter phone number"
                       />
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
+                    <Label
+                      htmlFor="email"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Email
+                    </Label>
                     <div className="flex items-center gap-2 mt-1">
                       <Mail className="w-4 h-4 text-gray-500" />
                       <Input
                         id="email"
-                        value={editedFarm?.contact_email || ''}
-                        onChange={(e) => handleFarmInputChange('contact_email', e.target.value)}
+                        value={editedFarm?.contact_email || ""}
+                        onChange={(e) =>
+                          handleFarmInputChange("contact_email", e.target.value)
+                        }
                         placeholder="Enter email address"
                       />
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="hours" className="text-sm font-medium text-gray-700">Opening Hours</Label>
+                    <Label
+                      htmlFor="hours"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Opening Hours
+                    </Label>
                     <div className="flex items-center gap-2 mt-1">
                       <Clock className="w-4 h-4 text-gray-500" />
                       <Input
                         id="hours"
-                        value={editedFarm?.opening_hours || ''}
-                        onChange={(e) => handleFarmInputChange('opening_hours', e.target.value)}
+                        value={editedFarm?.opening_hours || ""}
+                        onChange={(e) =>
+                          handleFarmInputChange("opening_hours", e.target.value)
+                        }
                         placeholder="e.g., Mon-Sat 8AM-6PM"
                       />
                     </div>
@@ -587,7 +676,7 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
                 </div>
               )}
             </div>
-            
+
             {/* Map Card */}
             <div className="border border-gray-200 rounded-lg p-6">
               <div className="text-center mb-4">
@@ -602,12 +691,14 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
           {/* Management Note */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-blue-800 text-sm">
-              <strong>{isPreviewMode ? 'Preview Mode:' : 'Edit Mode:'}</strong> {isPreviewMode ? 'This is how visitors will see your farm profile.' : 'You are currently editing your farm information. Click Preview to see how it will look to visitors.'}
+              <strong>{isPreviewMode ? "Preview Mode:" : "Edit Mode:"}</strong>{" "}
+              {isPreviewMode
+                ? "This is how visitors will see your farm profile."
+                : "You are currently editing your farm information. Click Preview to see how it will look to visitors."}
             </p>
           </div>
         </div>
       </div>
-
     </div>
   );
 }

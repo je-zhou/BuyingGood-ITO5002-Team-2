@@ -146,7 +146,7 @@ export default function SearchBar({
         params.append("categories", selectedCategories.join(","));
       }
 
-      const searchUrl = `/search?${params.toString()}`;
+      const searchUrl = `/farms?${params.toString()}`;
       window.location.href = searchUrl;
     }
   };

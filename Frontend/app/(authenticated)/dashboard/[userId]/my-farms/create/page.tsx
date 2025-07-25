@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { useApiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,6 +34,7 @@ interface CreateFarmData {
 export default function CreateFarm({ params }: { params: Promise<{ userId: string }> }) {
   const { isLoaded } = useUser();
   const router = useRouter();
+  const api = useApiClient();
   const [resolvedParams, setResolvedParams] = useState<{ userId: string } | null>(null);
   const [formData, setFormData] = useState<CreateFarmData>({
     name: "",
@@ -132,21 +134,18 @@ export default function CreateFarm({ params }: { params: Promise<{ userId: strin
     setSaving(true);
     
     try {
-      // Mock API call - replace with real API call when backend is ready
-      const newFarm = {
+      const farmData = {
         ...formData,
-        farmId: `farm-${Date.now()}`,
         ownerId: resolvedParams.userId,
-        createdAt: new Date().toISOString()
       };
       
-      console.log('Creating farm:', newFarm);
+      const result = await api.createFarm(farmData);
       
-      // Simulate API delay
-      setTimeout(() => {
-        setSaving(false);
-        router.push(`/dashboard/${resolvedParams.userId}/farms`);
-      }, 1000);
+      if (result.success) {
+        router.push(`/dashboard/${resolvedParams.userId}/my-farms`);
+      } else {
+        throw new Error(result.error || 'Failed to create farm');
+      }
       
     } catch (error) {
       console.error('Error creating farm:', error);
@@ -181,11 +180,11 @@ export default function CreateFarm({ params }: { params: Promise<{ userId: strin
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbLink href={`/dashboard/${resolvedParams.userId}/farms`}>Farms</BreadcrumbLink>
+                <BreadcrumbLink href={`/dashboard/${resolvedParams.userId}/my-farms`}>My Farms</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbLink href={`/dashboard/${resolvedParams.userId}/farms/create`}>Create Farm</BreadcrumbLink>
+                <BreadcrumbLink href={`/dashboard/${resolvedParams.userId}/my-farms/create`}>Create Farm</BreadcrumbLink>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -193,7 +192,7 @@ export default function CreateFarm({ params }: { params: Promise<{ userId: strin
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
-                onClick={() => router.push(`/dashboard/${resolvedParams.userId}/farms`)}
+                onClick={() => router.push(`/dashboard/${resolvedParams.userId}/my-farms`)}
                 variant="outline"
                 size="sm"
               >

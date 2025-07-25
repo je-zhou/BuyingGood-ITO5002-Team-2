@@ -8,8 +8,8 @@ export default function UserDashboardRedirect({ params }: { params: Promise<{ us
 
   useEffect(() => {
     params.then((resolvedParams) => {
-      // Redirect to the farms page by default
-      router.replace(`/dashboard/${resolvedParams.userId}/farms`);
+      // Redirect to the my-farms page by default
+      router.replace(`/dashboard/${resolvedParams.userId}/my-farms`);
     });
   }, [params, router]);
 

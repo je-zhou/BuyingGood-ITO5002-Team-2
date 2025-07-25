@@ -6,6 +6,7 @@ import SearchBar from "@/components/SearchBar/SearchBar";
 import ProductHoverCard from "@/components/ProductHoverCard/ProductHoverCard";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { unauthenticatedApiClient } from "@/lib/api-client";
 
 interface Farm {
   farmId: string;
@@ -71,16 +72,10 @@ async function fetchFarms(params: {
     searchParams.set("categories", params.categories.join(","));
   }
 
-  const response = await fetch(`/api/farms?${searchParams.toString()}`);
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch farms");
-  }
-
-  return response.json();
+  return unauthenticatedApiClient.getFarms(searchParams);
 }
 
-function SearchPageContent() {
+function FarmsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -199,7 +194,10 @@ function SearchPageContent() {
       setHasNextPage(data.data.pagination.currentPage < data.data.pagination.totalPages);
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch farms");
+      // Show the full detailed error message for developers
+      const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
+      setError(errorMessage);
+      
       if (params.reset) {
         setSearchData(null);
         setAllFarms([]);
@@ -231,7 +229,7 @@ function SearchPageContent() {
       params.set("categories", selectedCategories.join(","));
     }
 
-    router.push(`/search?${params.toString()}`);
+    router.push(`/farms?${params.toString()}`);
   };
 
   // Load more function for infinite scroll
@@ -333,9 +331,18 @@ function SearchPageContent() {
 
         {/* Error State */}
         {error && (
-          <div className="mt-8 text-center py-12">
-            <p className="text-red-600 mb-4">Error: {error}</p>
-            <Button onClick={() => handleSearch()}>Try Again</Button>
+          <div className="mt-8 py-12">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-red-800 mb-4">Error Details</h3>
+              <pre className="text-sm text-red-700 whitespace-pre-wrap bg-red-100 p-4 rounded border overflow-auto max-h-96">
+                {error}
+              </pre>
+              <div className="mt-4 text-center">
+                <Button onClick={() => handleSearch()} className="bg-red-600 hover:bg-red-700 text-white">
+                  Try Again
+                </Button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -447,19 +454,19 @@ function SearchPageContent() {
   );
 }
 
-export default function SearchPage() {
+export default function FarmsPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen">
         <div className="container mx-auto px-4 py-6">
           <div className="mt-8 text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-            <p className="mt-2 text-gray-600">Loading search...</p>
+            <p className="mt-2 text-gray-600">Loading farms...</p>
           </div>
         </div>
       </div>
     }>
-      <SearchPageContent />
+      <FarmsPageContent />
     </Suspense>
   );
 }
