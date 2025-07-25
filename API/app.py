@@ -79,9 +79,8 @@ def clerk_auth_required(f):
             # Access the user ID via the .payload attribute.
             g.user_id = claims_state.payload.get("sub")
 
-
             if g.user_id == "user_30K4lb7TiQ0dNkhl2FSUy0t6ftQ":
-                g.user_id = '687f15cef56cd689e409219c';
+                g.user_id = '687f15cef56cd689e409219c'
         except exc.Unauthorized as e:
             print(f"Authentication error: {e.message}")
             return jsonify({
