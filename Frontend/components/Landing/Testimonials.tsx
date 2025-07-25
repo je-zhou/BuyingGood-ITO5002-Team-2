@@ -82,7 +82,7 @@ export default function Testimonials() {
         </div>
       </div>
 
-      <div className="w-full px-20 md:px-24">
+      <div className="w-full px-12 md:px-24">
         <Carousel
           opts={{
             align: "start",
@@ -92,14 +92,14 @@ export default function Testimonials() {
           }}
           className="w-full max-w-7xl mx-auto"
         >
-          <CarouselContent className="-ml-4">
+          <CarouselContent>
             {testimonials.map((testimonial, index) => (
               <CarouselItem
                 key={index}
-                className="pl-4 md:basis-1/2 basis-full"
+                className="md:basis-[47%] basis-full m-4"
               >
-                <div className="h-full">
-                  <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 h-full">
+                <div className="h-full p-2">
+                  <div className="bg-white rounded-xl shadow-lg p-2 md:p-4 h-full">
                     <div className="flex flex-col h-full">
                       <div className="mb-6">
                         <div className="text-5xl md:text-6xl text-green-600 mb-4">
