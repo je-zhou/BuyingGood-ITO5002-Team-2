@@ -1,0 +1,107 @@
+{
+  "data": {
+    "backup_code_enabled": false,
+    "banned": false,
+    "create_organization_enabled": true,
+    "created_at": 1753413504695,
+    "delete_self_enabled": true,
+    "email_addresses": [
+      {
+        "created_at": 1753413498936,
+        "email_address": "jerry.zhou07@gmail.com",
+        "id": "idn_30LixInPlPGT7iuWcDma5Tr526q",
+        "linked_to": [
+          {
+            "id": "idn_30LixEw9liiq1PXtHYRJ7vyqvka",
+            "type": "oauth_google"
+          }
+        ],
+        "matches_sso_connection": false,
+        "object": "email_address",
+        "reserved": false,
+        "updated_at": 1753413504713,
+        "verification": {
+          "attempts": null,
+          "expire_at": null,
+          "object": "verification_from_oauth",
+          "status": "verified",
+          "strategy": "from_oauth_google"
+        }
+      }
+    ],
+    "enterprise_accounts": [],
+    "external_accounts": [
+      {
+        "approved_scopes": "email https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid profile",
+        "avatar_url": "https://lh3.googleusercontent.com/a/ACg8ocKzPsaC3I3Yj7LkDEVaR3KenSl0NAeT_Om1inE1230kyOm3Gw=s1000-c",
+        "created_at": 1753413498928,
+        "email_address": "jerry.zhou07@gmail.com",
+        "external_account_id": "eac_30LixFV0hsD8ASOsrGQ6SDNlKmF",
+        "family_name": "Zhou",
+        "first_name": "Jerry",
+        "given_name": "Jerry",
+        "google_id": "115845613304724490815",
+        "id": "idn_30LixEw9liiq1PXtHYRJ7vyqvka",
+        "identification_id": "idn_30LixEw9liiq1PXtHYRJ7vyqvka",
+        "image_url": "https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQ2c4b2NLelBzYUMzSTNZajdMa0RFVmFSM0tlblNsME5BZVRfT20xaW5FMTIzMGt5T20zR3c9czEwMDAtYyIsInMiOiJPc0g2Zi9VT1c4L0tnZE1TTFF5UkJ4dzFDVEpXQThpVllSem9ocmd0MHFvIn0",
+        "label": null,
+        "last_name": "Zhou",
+        "object": "google_account",
+        "picture": "https://lh3.googleusercontent.com/a/ACg8ocKzPsaC3I3Yj7LkDEVaR3KenSl0NAeT_Om1inE1230kyOm3Gw=s1000-c",
+        "provider": "oauth_google",
+        "provider_user_id": "115845613304724490815",
+        "public_metadata": {},
+        "updated_at": 1753413498928,
+        "username": null,
+        "verification": {
+          "attempts": null,
+          "expire_at": 1753414003094,
+          "object": "verification_oauth",
+          "status": "verified",
+          "strategy": "oauth_google"
+        }
+      }
+    ],
+    "external_id": null,
+    "first_name": "Jerry",
+    "has_image": true,
+    "id": "user_30Liy24grKtzoWoUaa5LO4HX642",
+    "image_url": "https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2ltYWdlcy5jbGVyay5kZXYvb2F1dGhfZ29vZ2xlL2ltZ18zMExpeTJUMWxyTVNhRGxDRUJ6M01uMlNEVkUifQ",
+    "last_active_at": 1753413504694,
+    "last_name": "Zhou",
+    "last_sign_in_at": null,
+    "legal_accepted_at": null,
+    "locked": false,
+    "lockout_expires_in_seconds": null,
+    "mfa_disabled_at": null,
+    "mfa_enabled_at": null,
+    "object": "user",
+    "passkeys": [],
+    "password_enabled": false,
+    "phone_numbers": [],
+    "primary_email_address_id": "idn_30LixInPlPGT7iuWcDma5Tr526q",
+    "primary_phone_number_id": null,
+    "primary_web3_wallet_id": null,
+    "private_metadata": {},
+    "profile_image_url": "https://images.clerk.dev/oauth_google/img_30Liy2T1lrMSaDlCEBz3Mn2SDVE",
+    "public_metadata": {},
+    "saml_accounts": [],
+    "totp_enabled": false,
+    "two_factor_enabled": false,
+    "unsafe_metadata": {},
+    "updated_at": 1753413504736,
+    "username": null,
+    "verification_attempts_remaining": 100,
+    "web3_wallets": []
+  },
+  "event_attributes": {
+    "http_request": {
+      "client_ip": "2405:6e00:28ee:8e53:eb62:d816:82fc:3b56",
+      "user_agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:141.0) Gecko/20100101 Firefox/141.0"
+    }
+  },
+  "instance_id": "ins_308T76nrpUuW8MynfiGA8fCnDVs",
+  "object": "event",
+  "timestamp": 1753413504767,
+  "type": "user.created"
+}

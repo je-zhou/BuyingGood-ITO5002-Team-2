@@ -18,7 +18,7 @@ const Map = ({ address, className }: MapProps) => {
     () =>
       dynamic(() => import('./LeafletMap'), {
         loading: () => (
-          <div className={`w-full h-full bg-gray-100 border border-gray-300 rounded-lg flex items-center justify-center ${className}`}>
+          <div className={`w-full h-full bg-gray-100 border border-gray-300 rounded-lg flex items-center justify-center ${className}`} style={{ zIndex: 1 }}>
             <span className="text-gray-500">Loading map...</span>
           </div>
         ),

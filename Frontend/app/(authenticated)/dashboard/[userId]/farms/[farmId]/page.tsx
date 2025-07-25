@@ -11,7 +11,6 @@ import { MapPin, Phone, Mail, Clock, Edit, Plus, Trash2, ArrowLeft, Eye, Save } 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import ProductCreateModal from "@/components/ProductCreateModal/ProductCreateModal";
 import SimpleImageUpload from "@/components/ui/simple-image-upload";
 import {
   Breadcrumb,
@@ -64,7 +63,6 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
   const [farmProduce, setFarmProduce] = useState<Produce[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
-  const [showProductModal, setShowProductModal] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [editedFarm, setEditedFarm] = useState<Farm | null>(null);
   const [farmImages, setFarmImages] = useState<string[]>([]);
@@ -182,9 +180,12 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
     }, 300);
   };
 
-  const handleProductCreated = () => {
-    // Refresh the farm data to show the new product
-    fetchFarm();
+  const handleCreateProduct = () => {
+    router.push(`/dashboard/${resolvedParams?.userId}/farms/${resolvedParams?.farmId}/products/create`);
+  };
+
+  const handleEditProduct = (product: Produce) => {
+    router.push(`/dashboard/${resolvedParams?.userId}/farms/${resolvedParams?.farmId}/products/${product.id}/edit`);
   };
 
   const handleFarmInputChange = (field: string, value: string) => {
@@ -255,7 +256,7 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
             
             <div className="flex gap-2">
               <Button
-                onClick={() => setShowProductModal(true)}
+                onClick={handleCreateProduct}
                 variant="outline"
                 size="sm"
               >
@@ -423,7 +424,7 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-900">We Produce</h2>
             <Button
-              onClick={() => setShowProductModal(true)}
+              onClick={handleCreateProduct}
               size="sm"
               className="bg-green-600 hover:bg-green-700"
             >
@@ -439,7 +440,7 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
                 <p>No products added yet</p>
               </div>
               <Button
-                onClick={() => setShowProductModal(true)}
+                onClick={handleCreateProduct}
                 className="bg-green-600 hover:bg-green-700"
               >
                 Add Your First Product
@@ -475,7 +476,7 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
                     {/* Management buttons overlay */}
                     <div className="absolute top-2 right-2 flex gap-1">
                       <Button
-                        onClick={() => router.push(`/dashboard/${resolvedParams.userId}/products/${produce.id}`)}
+                        onClick={() => handleEditProduct(produce)}
                         size="sm"
                         variant="secondary"
                         className="h-6 w-6 p-0"
@@ -613,13 +614,6 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
         </div>
       </div>
 
-      {/* Product Creation Modal */}
-      <ProductCreateModal
-        isOpen={showProductModal}
-        onClose={() => setShowProductModal(false)}
-        farmId={farm.farmId}
-        onProductCreated={handleProductCreated}
-      />
     </div>
   );
 }

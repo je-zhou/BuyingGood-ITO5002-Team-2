@@ -11,11 +11,30 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Save } from "lucide-react";
 import SimpleImageUpload from "@/components/ui/simple-image-upload";
 
+interface Produce {
+  id: string;
+  name: string;
+  category: string[];
+  description: string;
+  pricePerUnit: number;
+  unit: string;
+  minimumOrderQuantity: number;
+  minimumOrderUnit: string;
+  availabilityWindows: {
+    startMonth: number;
+    endMonth: number;
+  }[];
+  farmId: string;
+  images: string[];
+  createdAt: string;
+}
+
 interface ProductCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
   farmId: string;
   onProductCreated: () => void;
+  editingProduct?: Produce | null;
 }
 
 interface CreateProductData {
@@ -80,23 +99,50 @@ export default function ProductCreateModal({
   isOpen,
   onClose,
   farmId,
-  onProductCreated
+  onProductCreated,
+  editingProduct = null
 }: ProductCreateModalProps) {
   const router = useRouter();
-  const [formData, setFormData] = useState<CreateProductData>({
-    name: "",
-    category: [],
-    description: "",
-    pricePerUnit: 0,
-    unit: "",
-    minimumOrderQuantity: 1,
-    minimumOrderUnit: "",
-    availabilityStartMonth: 1,
-    availabilityEndMonth: 12,
-    images: []
-  });
+  const isEditing = !!editingProduct;
+  
+  const getInitialFormData = (): CreateProductData => {
+    if (editingProduct) {
+      return {
+        name: editingProduct.name,
+        category: editingProduct.category,
+        description: editingProduct.description,
+        pricePerUnit: editingProduct.pricePerUnit,
+        unit: editingProduct.unit,
+        minimumOrderQuantity: editingProduct.minimumOrderQuantity,
+        minimumOrderUnit: editingProduct.minimumOrderUnit,
+        availabilityStartMonth: editingProduct.availabilityWindows[0]?.startMonth || 1,
+        availabilityEndMonth: editingProduct.availabilityWindows[0]?.endMonth || 12,
+        images: editingProduct.images
+      };
+    }
+    return {
+      name: "",
+      category: [],
+      description: "",
+      pricePerUnit: 0,
+      unit: "",
+      minimumOrderQuantity: 1,
+      minimumOrderUnit: "",
+      availabilityStartMonth: 1,
+      availabilityEndMonth: 12,
+      images: []
+    };
+  };
+
+  const [formData, setFormData] = useState<CreateProductData>(getInitialFormData());
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+
+  // Update form data when editingProduct changes
+  React.useEffect(() => {
+    setFormData(getInitialFormData());
+    setErrors({});
+  }, [editingProduct, isOpen]);
 
   const handleInputChange = (field: string, value: string | number | string[]) => {
     setFormData(prev => ({
@@ -163,50 +209,62 @@ export default function ProductCreateModal({
     setSaving(true);
     
     try {
-      // Mock API call - replace with real API call when backend is ready
-      const newProduct = {
-        id: `produce-${Date.now()}`,
-        ...formData,
-        availabilityWindows: [{
-          startMonth: formData.availabilityStartMonth,
-          endMonth: formData.availabilityEndMonth
-        }],
-        farmId,
-        images: formData.images,
-        createdAt: new Date().toISOString()
-      };
-      
-      console.log('Creating product:', newProduct);
-      
-      // Simulate API delay
-      setTimeout(() => {
-        setSaving(false);
-        onClose();
-        onProductCreated();
-        router.refresh();
-      }, 1000);
+      if (isEditing) {
+        // Mock API call for updating product - replace with real API call when backend is ready
+        const updatedProduct = {
+          ...editingProduct,
+          ...formData,
+          availabilityWindows: [{
+            startMonth: formData.availabilityStartMonth,
+            endMonth: formData.availabilityEndMonth
+          }],
+          images: formData.images
+        };
+        
+        console.log('Updating product:', updatedProduct);
+        
+        // Simulate API delay
+        setTimeout(() => {
+          setSaving(false);
+          onClose();
+          onProductCreated();
+          router.refresh();
+        }, 1000);
+      } else {
+        // Mock API call for creating product - replace with real API call when backend is ready
+        const newProduct = {
+          id: `produce-${Date.now()}`,
+          ...formData,
+          availabilityWindows: [{
+            startMonth: formData.availabilityStartMonth,
+            endMonth: formData.availabilityEndMonth
+          }],
+          farmId,
+          images: formData.images,
+          createdAt: new Date().toISOString()
+        };
+        
+        console.log('Creating product:', newProduct);
+        
+        // Simulate API delay
+        setTimeout(() => {
+          setSaving(false);
+          onClose();
+          onProductCreated();
+          router.refresh();
+        }, 1000);
+      }
       
     } catch (error) {
-      console.error('Error creating product:', error);
-      setErrors({ submit: 'Failed to create product. Please try again.' });
+      console.error(`Error ${isEditing ? 'updating' : 'creating'} product:`, error);
+      setErrors({ submit: `Failed to ${isEditing ? 'update' : 'create'} product. Please try again.` });
       setSaving(false);
     }
   };
 
   const handleClose = () => {
     if (!saving) {
-      setFormData({
-        name: "",
-        category: [],
-        description: "",
-        pricePerUnit: 0,
-        unit: "",
-        minimumOrderQuantity: 1,
-        minimumOrderUnit: "",
-        availabilityStartMonth: 1,
-        availabilityEndMonth: 12,
-        images: []
-      });
+      setFormData(getInitialFormData());
       setErrors({});
       onClose();
     }
@@ -216,7 +274,7 @@ export default function ProductCreateModal({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Product</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit Product' : 'Add New Product'}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -242,7 +300,7 @@ export default function ProductCreateModal({
 
             <div className="space-y-2">
               <Label htmlFor="category">Category *</Label>
-              <Select onValueChange={(value) => handleInputChange('category', [value])}>
+              <Select value={formData.category[0] || ''} onValueChange={(value) => handleInputChange('category', [value])}>
                 <SelectTrigger className={errors.category ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
@@ -291,7 +349,7 @@ export default function ProductCreateModal({
 
             <div className="space-y-2">
               <Label htmlFor="unit">Unit *</Label>
-              <Select onValueChange={(value) => handleInputChange('unit', value)}>
+              <Select value={formData.unit} onValueChange={(value) => handleInputChange('unit', value)}>
                 <SelectTrigger className={errors.unit ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Select unit" />
                 </SelectTrigger>
@@ -324,7 +382,7 @@ export default function ProductCreateModal({
 
             <div className="space-y-2">
               <Label htmlFor="minimumOrderUnit">Minimum Order Unit *</Label>
-              <Select onValueChange={(value) => handleInputChange('minimumOrderUnit', value)}>
+              <Select value={formData.minimumOrderUnit} onValueChange={(value) => handleInputChange('minimumOrderUnit', value)}>
                 <SelectTrigger className={errors.minimumOrderUnit ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Select unit" />
                 </SelectTrigger>
@@ -359,7 +417,7 @@ export default function ProductCreateModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="availabilityStartMonth">Start Month</Label>
-                <Select onValueChange={(value) => handleInputChange('availabilityStartMonth', parseInt(value))}>
+                <Select value={formData.availabilityStartMonth.toString()} onValueChange={(value) => handleInputChange('availabilityStartMonth', parseInt(value))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select start month" />
                   </SelectTrigger>
@@ -375,7 +433,7 @@ export default function ProductCreateModal({
 
               <div className="space-y-2">
                 <Label htmlFor="availabilityEndMonth">End Month</Label>
-                <Select onValueChange={(value) => handleInputChange('availabilityEndMonth', parseInt(value))}>
+                <Select value={formData.availabilityEndMonth.toString()} onValueChange={(value) => handleInputChange('availabilityEndMonth', parseInt(value))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select end month" />
                   </SelectTrigger>
@@ -409,12 +467,12 @@ export default function ProductCreateModal({
             {saving ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Creating...
+                {isEditing ? 'Updating...' : 'Creating...'}
               </>
             ) : (
               <>
                 <Save className="w-4 h-4 mr-2" />
-                Create Product
+                {isEditing ? 'Update Product' : 'Create Product'}
               </>
             )}
           </Button>
