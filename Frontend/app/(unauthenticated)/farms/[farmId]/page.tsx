@@ -14,6 +14,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { MapPin, Phone, Mail, Clock } from 'lucide-react';
+import { unauthenticatedApiClient } from '@/lib/api-client';
 
 interface Farm {
   farmId: string;
@@ -66,16 +67,7 @@ const contactFormSchema = z.object({
 
 async function getFarmById(farmId: string): Promise<Farm | null> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/farms/${farmId}`, {
-      cache: 'no-store'
-    });
-    
-    if (!response.ok) {
-      return null;
-    }
-    
-    const data = await response.json();
-    return data.success ? data.data : null;
+    return await unauthenticatedApiClient.getFarmById(farmId);
   } catch (error) {
     console.error('Error fetching farm:', error);
     return null;

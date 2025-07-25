@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Plus } from "lucide-react";
 import Link from "next/link";
+import { useApiClient } from "@/lib/api-client";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -51,7 +52,7 @@ export default function FarmsPage({ params }: { params: Promise<{ userId: string
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink href={`/dashboard/${resolvedParams?.userId}/farms`}>Farms</BreadcrumbLink>
+              <BreadcrumbLink href={`/dashboard/${resolvedParams?.userId}/my-farms`}>My Farms</BreadcrumbLink>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -73,7 +74,7 @@ function CreateFarmTile({ userId }: { userId?: string }) {
   
   return (
     <Link
-      href={`/dashboard/${userId}/farms/create`}
+      href={`/dashboard/${userId}/my-farms/create`}
       className="rounded w-full bg-gray-100 flex items-center justify-center space-x-1"
     >
       <Plus className="w-4 h-4" />
@@ -87,7 +88,7 @@ function FarmTile({ farm, userId }: { farm: Farm; userId?: string }) {
   
   return (
     <Link
-      href={`/dashboard/${userId}/farms/${farm.farmId}`}
+      href={`/dashboard/${userId}/my-farms/${farm.farmId}`}
       className="rounded w-full flex flex-col border border-gray-200"
     >
       <div className="w-full border-b border-gray-200 rounded-t flex items-center p-4 justify-between">
@@ -120,78 +121,46 @@ const FarmsContent = ({ userId }: { userId?: string }) => {
   const { user, isLoaded } = useUser();
   const [farms, setFarms] = useState<Farm[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchFarms = React.useCallback(async () => {
-    if (!user || !userId) return;
+  // Get API client
+  const api = useApiClient();
 
-    // Mock data - replace with real API call when backend is ready
-    // Note: Using same data for all userIds for now as requested
-    const mockFarms: Farm[] = [
-      {
-        farmId: "farm-001",
-        name: "Green Valley Farm",
-        description:
-          "Organic vegetables and fruits grown with sustainable farming practices. Family-owned for over 50 years.",
-        address: {
-          street: "123 Farm Road",
-          city: "Springfield",
-          state: "CA",
-          zipCode: "95123",
-        },
-        contact_email: "contact@greenvalleyfarm.com",
-        contact_phone: "(555) 123-4567",
-        opening_hours: "Mon-Sat 8AM-6PM",
-        ownerId: userId,
-        createdAt: "2024-01-15T08:00:00Z",
-      },
-      {
-        farmId: "farm-002",
-        name: "Sunny Acres",
-        description:
-          "Premium quality berries and seasonal produce. Specializing in strawberries, blueberries, and summer vegetables.",
-        address: {
-          street: "456 Sunshine Lane",
-          city: "Riverside",
-          state: "CA",
-          zipCode: "92503",
-        },
-        contact_email: "info@sunnyacres.com",
-        contact_phone: "(555) 987-6543",
-        opening_hours: "Daily 7AM-7PM",
-        ownerId: userId,
-        createdAt: "2024-02-20T10:30:00Z",
-      },
-      {
-        farmId: "farm-003",
-        name: "Heritage Organic Farm",
-        description:
-          "Heirloom tomatoes, herbs, and artisanal vegetables. Committed to preserving traditional farming methods.",
-        address: {
-          street: "789 Heritage Way",
-          city: "Fresno",
-          state: "CA",
-          zipCode: "93720",
-        },
-        contact_email: "hello@heritageorganic.com",
-        contact_phone: "(555) 456-7890",
-        opening_hours: "Tue-Sun 9AM-5PM",
-        ownerId: userId,
-        createdAt: "2024-03-10T12:15:00Z",
-      },
-    ];
+  // Memoize the fetch function to avoid recreating it on every render
+  const fetchFarms = useCallback(async () => {
+    if (!isLoaded || !user || !userId) return;
 
-    // Simulate API delay
-    setTimeout(() => {
-      setFarms(mockFarms);
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch farms for the current user using client API
+      const data = await api.getFarms();
+      
+      if (data.success) {
+        // Filter farms by owner if backend doesn't do it
+        const userFarms = data.data.farms.filter((farm: Farm) => farm.ownerId === userId);
+        setFarms(userFarms);
+      }
+      
+    } catch (error) {
+      console.error('Error fetching farms:', error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred while fetching farms";
+      setError(errorMessage);
+      setFarms([]);
+    } finally {
       setLoading(false);
-    }, 500);
-  }, [user, userId]);
+    }
+  }, [isLoaded, user, userId, api]);
 
   useEffect(() => {
-    if (isLoaded && user && userId) {
-      fetchFarms();
-    }
-  }, [isLoaded, user, userId, fetchFarms]);
+    fetchFarms();
+  }, [fetchFarms]);
+
+  // Separate function for retry button
+  const retryFetch = () => {
+    fetchFarms();
+  };
 
   if (!isLoaded || loading) {
     return <FarmsSkeletonLoader userId={userId} />;
@@ -201,6 +170,27 @@ const FarmsContent = ({ userId }: { userId?: string }) => {
     return (
       <div className="w-full h-full flex items-center justify-center">
         User not found
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-red-800 mb-4">Error Details</h3>
+          <pre className="text-sm text-red-700 whitespace-pre-wrap bg-red-100 p-4 rounded border overflow-auto max-h-96">
+            {error}
+          </pre>
+          <div className="mt-4">
+            <button 
+              onClick={() => retryFetch()}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

@@ -1,11 +1,11 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Farm Profiles - Buying Good",
-  description: "Explore local farm profiles and discover fresh produce, contact information, and seasonal availability from farmers in your area.",
+  title: "Local Farms - Buying Good",
+  description: "Search and discover local farms and fresh produce near you. Find sustainable, locally-grown food directly from farmers in your area.",
   openGraph: {
-    title: "Farm Profiles - Buying Good",
-    description: "Explore local farm profiles and discover fresh produce from farmers in your area.",
+    title: "Local Farms - Buying Good", 
+    description: "Search and discover local farms and fresh produce near you. Find sustainable, locally-grown food directly from farmers.",
   },
 };
 

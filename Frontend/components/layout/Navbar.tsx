@@ -50,7 +50,7 @@ export default function Navbar() {
 
       {/* Nav Links */}
       <div className="flex items-center gap-12">
-        <Link href={"/search"} className="hover:text-primary cursor-pointer">
+        <Link href={"/farms"} className="hover:text-primary cursor-pointer">
           Nearby Farms
         </Link>
         <button

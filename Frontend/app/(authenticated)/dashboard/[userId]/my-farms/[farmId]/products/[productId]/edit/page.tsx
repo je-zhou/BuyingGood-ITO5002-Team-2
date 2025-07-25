@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useApiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,13 +12,31 @@ import { Save, ArrowLeft, Plus, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import SimpleImageUpload from "@/components/ui/simple-image-upload";
 
+interface Produce {
+  id: string;
+  name: string;
+  category: string[];
+  description: string;
+  pricePerUnit: number;
+  unit: string;
+  minimumOrderQuantity: number;
+  minimumOrderUnit: string;
+  availabilityWindows: {
+    startMonth: number;
+    endMonth: number;
+  }[];
+  farmId: string;
+  images: string[];
+  createdAt: string;
+}
+
 interface AvailabilityWindow {
   id: string;
   startMonth: number;
   endMonth: number;
 }
 
-interface CreateProductData {
+interface EditProductData {
   name: string;
   category: string[];
   description: string;
@@ -74,10 +93,13 @@ const months = [
   { value: 12, label: "December" }
 ];
 
-export default function CreateProductPage({ params }: { params: Promise<{ userId: string; farmId: string }> }) {
+export default function EditProductPage({ params }: { params: Promise<{ userId: string; farmId: string; productId: string }> }) {
   const router = useRouter();
-  const [resolvedParams, setResolvedParams] = useState<{ userId: string; farmId: string } | null>(null);
-  const [formData, setFormData] = useState<CreateProductData>({
+  const api = useApiClient();
+  const [resolvedParams, setResolvedParams] = useState<{ userId: string; farmId: string; productId: string } | null>(null);
+  const [product, setProduct] = useState<Produce | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState<EditProductData>({
     name: "",
     category: [],
     description: "",
@@ -94,6 +116,44 @@ export default function CreateProductPage({ params }: { params: Promise<{ userId
   useEffect(() => {
     params.then(setResolvedParams);
   }, [params]);
+
+  const fetchProduct = React.useCallback(async () => {
+    if (!resolvedParams) return;
+    
+    try {
+      const data = await api.getProduceById(resolvedParams.productId);
+      
+      if (data.success) {
+        const product = data.data;
+        setProduct(product);
+        setFormData({
+          name: product.name,
+          category: product.category,
+          description: product.description,
+          pricePerUnit: product.pricePerUnit,
+          unit: product.unit,
+          minimumOrderQuantity: product.minimumOrderQuantity,
+          minimumOrderUnit: product.minimumOrderUnit,
+          availabilityWindows: product.availabilityWindows.map((window: { startMonth: number; endMonth: number }) => ({
+            id: crypto.randomUUID(),
+            startMonth: window.startMonth,
+            endMonth: window.endMonth
+          })),
+          images: product.images
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching product:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [resolvedParams, api]);
+
+  useEffect(() => {
+    if (resolvedParams) {
+      fetchProduct();
+    }
+  }, [resolvedParams, fetchProduct]);
 
   const handleInputChange = (field: string, value: string | number | string[] | AvailabilityWindow[]) => {
     setFormData(prev => ({
@@ -210,48 +270,54 @@ export default function CreateProductPage({ params }: { params: Promise<{ userId
   };
 
   const handleSave = async () => {
-    if (!validateForm() || !resolvedParams) {
+    if (!validateForm() || !resolvedParams || !product) {
       return;
     }
 
     setSaving(true);
     
     try {
-      // Mock API call - replace with real API call when backend is ready
-      const newProduct = {
-        id: `produce-${Date.now()}`,
-        ...formData,
-        farmId: resolvedParams.farmId,
-        createdAt: new Date().toISOString()
-      };
+      const result = await api.updateProduce(resolvedParams.productId, formData);
       
-      console.log('Creating product:', newProduct);
-      
-      // Simulate API delay
-      setTimeout(() => {
-        setSaving(false);
-        router.push(`/dashboard/${resolvedParams.userId}/farms/${resolvedParams.farmId}`);
-      }, 1000);
+      if (result.success) {
+        router.push(`/dashboard/${resolvedParams.userId}/my-farms/${resolvedParams.farmId}`);
+      } else {
+        throw new Error(result.error || 'Failed to update product');
+      }
       
     } catch (error) {
-      console.error('Error creating product:', error);
-      setErrors({ submit: 'Failed to create product. Please try again.' });
+      console.error('Error updating product:', error);
+      setErrors({ submit: 'Failed to update product. Please try again.' });
+    } finally {
       setSaving(false);
     }
   };
 
   const handleBack = () => {
     if (resolvedParams) {
-      router.push(`/dashboard/${resolvedParams.userId}/farms/${resolvedParams.farmId}`);
+      router.push(`/dashboard/${resolvedParams.userId}/my-farms/${resolvedParams.farmId}`);
     }
   };
 
-  if (!resolvedParams) {
+  if (!resolvedParams || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">Loading product...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Product not found</p>
+          <Button onClick={handleBack} className="mt-4">
+            Back to Farm
+          </Button>
         </div>
       </div>
     );
@@ -272,7 +338,7 @@ export default function CreateProductPage({ params }: { params: Promise<{ userId
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Farm
               </Button>
-              <h1 className="text-2xl font-bold text-gray-900">Add New Product</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Edit Product</h1>
             </div>
             <Button
               onClick={handleSave}
@@ -282,12 +348,12 @@ export default function CreateProductPage({ params }: { params: Promise<{ userId
               {saving ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Creating...
+                  Updating...
                 </>
               ) : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  Create Product
+                  Update Product
                 </>
               )}
             </Button>
