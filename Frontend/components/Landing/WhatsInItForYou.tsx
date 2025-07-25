@@ -33,7 +33,7 @@ export default function WhatsInItForYou() {
 
       <div className="relative h-full w-full">
         <Image
-          src={"/farmer.png"}
+          src={"/farmer 2.png"}
           // src={""}
           alt="img"
           fill
