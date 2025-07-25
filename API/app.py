@@ -165,9 +165,20 @@ def auth_register():
         data = request.form
         print(f"{request.remote_addr}: Request body received, {data}")
 
-        for key in ["email","firstName","lastName","phoneNumber"]:
-            if not key in list(data.keys()):
-                raise exc.BadRequest(f"Missing parameter, {key}")
+        # for key in ["email","firstName","lastName","phoneNumber"]:
+        #     if not key in list(data.keys()):
+        #         raise exc.BadRequest(f"Missing parameter, {key}")
+            
+        phone_number = ""
+        try:
+            phone_number = data.get("phone_numbers")[0] if len(data.get("phone_numbers")) > 0 else ""
+        except:
+            pass
+
+        email_address = ""
+        for email in data.get("email_addressses"):
+            if email["id"] == data.get("primary_email_address_id"):
+                email_address = email["email_address"]
         
         # Check if the user email is already registered
         existing_user = db.users.find_one({"email": data.get("email")})
@@ -177,12 +188,14 @@ def auth_register():
 
         # Attempt to create the user in the database
         user_id = db.users.insert_one({
-            "email": data.get("email"),
-            "firstName": data.get("firstName"),
-            "lastName": data.get("lastName"),
-            "phoneNumbers": [data.get("phoneNumber")],
-            "createdAt": request_time,
-            "modifiedAt": request_time
+            "firstName": data.get("first_name"),
+            "lastName": data.get("last_name"),
+            "birthday": datetime.datetime.strptime(data.get("birthday"), "%d/%m/%Y").date() if data.get("birthday") != "" else "",
+            "gender": data.get("gender"),
+            "phoneNumber": phone_number,
+            "email": email_address,
+            "profileImage": data.get("profile_image_url"),
+            "updatedAt": datetime.datetime.fromtimestamp(data.get("updated_at"))
         }).inserted_id
         print(f"    {request.remote_addr}: user_id created, {user_id}")
 
