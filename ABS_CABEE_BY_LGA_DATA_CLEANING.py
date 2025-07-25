@@ -58,3 +58,23 @@ for df in (df_1,df_2,df_3):
     
 # Export cleaned data to csv
 df_clean.to_csv('ABS_CABEE_BY_LGA_CLEAN.csv', index = False)
+
+## INSERT TO MONGODB
+
+from pymongo import MongoClient
+
+# Define database username, password and connection string
+db_username = ''
+db_password = ''
+connect_str = 'mongodb+srv://' + db_username + ':' + db_password + '@buyinggood.jxdin83.mongodb.net/'
+
+# MongoDB connection
+client = MongoClient(connect_str)
+db = client['analytics']
+collection = db['business_count']
+
+# Delete all documents in the collection
+delete = collection.delete_many({})
+
+# Insert updated documents to collection
+collection.insert_many(df_clean.to_dict('records'))
