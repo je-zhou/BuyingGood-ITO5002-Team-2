@@ -158,11 +158,10 @@ def auth_register():
         Response (201 Created)
     """
     try:
-        request_time = datetime.datetime.now()
         db = client.authentication
 
         # Try to get the request body and make sure it is valid
-        data = request.form
+        data = request.json
         print(f"{request.remote_addr}: Request body received, {data}")
 
         # for key in ["email","firstName","lastName","phoneNumber"]:
@@ -176,26 +175,38 @@ def auth_register():
             pass
 
         email_address = ""
-        for email in data.get("email_addressses"):
+        print 
+        for email in data.get("email_addresses"):
             if email["id"] == data.get("primary_email_address_id"):
                 email_address = email["email_address"]
         
         # Check if the user email is already registered
-        existing_user = db.users.find_one({"email": data.get("email")})
+        existing_user = db.users.find_one({"email": email_address})
         if existing_user is not None:
-            print(f"    {request.remote_addr}: Email is already registered, {data.get("email")}")
-            raise exc.BadRequest(f"Email is already registered, {data.get("email")}")
+            print(f"    {request.remote_addr}: Email is already registered, {email_address}")
+            raise exc.BadRequest(f"Email is already registered, {email_address}")
+        
+        birthday = None
+        try:
+            birthday = datetime.datetime.strptime(data.get("birthday"), "%d/%m/%Y").date() if data.get("birthday") != "" else ""
+        except Exception as e:
+            pass
+
+        timestamp_milliseconds = data.get("updated_at")
+        timestamp_seconds = timestamp_milliseconds / 1000
+
+        dt_object = datetime.datetime.fromtimestamp(timestamp_seconds)
 
         # Attempt to create the user in the database
         user_id = db.users.insert_one({
             "firstName": data.get("first_name"),
-            "lastName": data.get("last_name"),
-            "birthday": datetime.datetime.strptime(data.get("birthday"), "%d/%m/%Y").date() if data.get("birthday") != "" else "",
+            "lastName": data.get("first_name"),
+            "birthday": birthday,
             "gender": data.get("gender"),
             "phoneNumber": phone_number,
             "email": email_address,
             "profileImage": data.get("profile_image_url"),
-            "updatedAt": datetime.datetime.fromtimestamp(data.get("updated_at"))
+            "updatedAt": dt_object
         }).inserted_id
         print(f"    {request.remote_addr}: user_id created, {user_id}")
 
@@ -204,9 +215,9 @@ def auth_register():
             "message": "Farmer registered successfully",
             "data": {
                 "userId": str(user_id),
-                "email": data.get("email"),
-                "firstName": data.get("firstName"),
-                "lastName": data.get("lastName")
+                "email": email_address,
+                "firstName": data.get("first_name"),
+                "lastName": data.get("first_name")
             }
         }), 201
     except exc.BadRequest as e:
