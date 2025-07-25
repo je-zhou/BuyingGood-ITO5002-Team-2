@@ -52,19 +52,20 @@ const LeafletMap = ({ address, className }: LeafletMapProps) => {
 
   if (!coordinates) {
     return (
-      <div className={`w-full h-full bg-gray-100 border border-gray-300 rounded-lg flex items-center justify-center ${className}`}>
+      <div className={`w-full h-full bg-gray-100 border border-gray-300 rounded-lg flex items-center justify-center ${className}`} style={{ zIndex: 1 }}>
         <span className="text-gray-500">Loading map...</span>
       </div>
     );
   }
 
   return (
-    <div className={`w-full h-full rounded-lg overflow-hidden ${className}`}>
+    <div className={`w-full h-full rounded-lg overflow-hidden ${className}`} style={{ zIndex: 1 }}>
       <MapContainer
         center={coordinates}
         zoom={13}
         scrollWheelZoom={false}
         className="w-full h-full"
+        style={{ zIndex: 1 }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

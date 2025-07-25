@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 
 export default function OurStory() {
   return (
@@ -22,6 +23,14 @@ export default function OurStory() {
           </p>
         </div>
       </div>
+
+      <Image
+        src={"/farmer.png"}
+        alt="logo"
+        width={480}
+        height={400}
+        className="rounded-lg border my-6"
+      />
     </div>
   );
 }

@@ -31,7 +31,7 @@ interface CreateFarmData {
 }
 
 export default function CreateFarm({ params }: { params: Promise<{ userId: string }> }) {
-  const { user, isLoaded } = useUser();
+  const { isLoaded } = useUser();
   const router = useRouter();
   const [resolvedParams, setResolvedParams] = useState<{ userId: string } | null>(null);
   const [formData, setFormData] = useState<CreateFarmData>({
