@@ -26,7 +26,10 @@ interface SearchBarProps {
     forestry: boolean;
     honey: boolean;
   };
-  onCategoryChange?: (category: keyof SearchBarProps['categories'], checked: boolean) => void;
+  onCategoryChange?: (
+    category: keyof SearchBarProps["categories"],
+    checked: boolean
+  ) => void;
   onSelectAll?: () => void;
 }
 
@@ -61,8 +64,14 @@ export default function SearchBar({
   });
 
   // Use external props if provided, otherwise use internal state
-  const productQuery = externalSearchQuery !== undefined ? externalSearchQuery : internalProductQuery;
-  const distanceWithin = externalDistanceWithin !== undefined ? externalDistanceWithin : internalDistanceWithin;
+  const productQuery =
+    externalSearchQuery !== undefined
+      ? externalSearchQuery
+      : internalProductQuery;
+  const distanceWithin =
+    externalDistanceWithin !== undefined
+      ? externalDistanceWithin
+      : internalDistanceWithin;
   const categories = externalCategories || internalCategories;
 
   const handleCategoryChange = (
@@ -70,7 +79,10 @@ export default function SearchBar({
     checked: boolean
   ) => {
     if (externalOnCategoryChange) {
-      externalOnCategoryChange(category as keyof SearchBarProps['categories'], checked);
+      externalOnCategoryChange(
+        category as keyof SearchBarProps["categories"],
+        checked
+      );
     } else {
       setInternalCategories((prev) => ({
         ...prev,
@@ -125,13 +137,13 @@ export default function SearchBar({
       const selectedCategories = Object.entries(categories)
         .filter(([, value]) => value)
         .map(([key]) => key);
-      
+
       const allCategories = Object.keys(categories);
       const allSelected = selectedCategories.length === allCategories.length;
-      
+
       // Only add categories to URL if not all are selected
       if (!allSelected && selectedCategories.length > 0) {
-        params.append("categories", selectedCategories.join(','));
+        params.append("categories", selectedCategories.join(","));
       }
 
       const searchUrl = `/search?${params.toString()}`;
@@ -142,7 +154,7 @@ export default function SearchBar({
   return (
     <div className="w-full">
       <div className="flex items-center gap-4 w-full h-full">
-        <div className="flex items-center w-full">
+        <div className="flex items-center w-full h-full">
           <Input
             placeholder="I want to buy..."
             className="rounded-l-sm rounded-r-none h-12"
@@ -168,7 +180,7 @@ export default function SearchBar({
           </label>
         </div>
 
-        <Button className="h-full" onClick={handleSearch}>
+        <Button className="h-12 cursor-pointer" onClick={handleSearch}>
           Find Local Farmers
         </Button>
       </div>
@@ -195,7 +207,9 @@ export default function SearchBar({
         <Filters
           distanceWithin={distanceWithin}
           categories={categories}
-          onDistanceChange={externalOnDistanceChange || setInternalDistanceWithin}
+          onDistanceChange={
+            externalOnDistanceChange || setInternalDistanceWithin
+          }
           onCategoryChange={handleCategoryChange}
           onSelectAll={handleSelectAll}
         />

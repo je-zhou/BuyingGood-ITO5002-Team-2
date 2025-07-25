@@ -7,29 +7,47 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import Map from '@/components/ui/map';
+import ProductCard from '@/components/ProductCard/ProductCard';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 
 interface Farm {
   farmId: string;
   name: string;
   description: string;
   address: {
+    street: string;
     city: string;
     state: string;
+    zipCode: string;
   };
+  contact_email: string;
+  contact_phone: string;
   opening_hours: string;
   produce: Produce[];
+  ownerId: string;
+  createdAt: string;
 }
 
 interface Produce {
   id: string;
   name: string;
-  price: number;
+  category: string[];
+  description: string;
+  pricePerUnit: number;
   unit: string;
-  availability: string;
-  category: string;
+  minimumOrderQuantity: number;
+  minimumOrderUnit: string;
+  availabilityWindows: {
+    startMonth: number;
+    endMonth: number;
+  }[];
+  images: string[];
+  createdAt: string;
 }
 
 // Contact form schema
@@ -40,9 +58,7 @@ const contactFormSchema = z.object({
   email: z.string().email({
     message: "Please enter a valid email address.",
   }),
-  subject: z.string().min(5, {
-    message: "Subject must be at least 5 characters.",
-  }),
+  company: z.string().optional(),
   message: z.string().min(10, {
     message: "Message must be at least 10 characters.",
   }),
@@ -77,7 +93,7 @@ export default function FarmDetailPage({ params }: { params: Promise<{ farmId: s
     defaultValues: {
       name: "",
       email: "",
-      subject: "",
+      company: "",
       message: "",
     },
   });
@@ -135,15 +151,6 @@ export default function FarmDetailPage({ params }: { params: Promise<{ farmId: s
     notFound();
   }
 
-  // Group produce by category
-  const produceByCategory = farm.produce.reduce((acc, produce) => {
-    const category = produce.category;
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(produce);
-    return acc;
-  }, {} as Record<string, Produce[]>);
 
   return (
     <div className="min-h-screen bg-white">
@@ -157,15 +164,23 @@ export default function FarmDetailPage({ params }: { params: Promise<{ farmId: s
           </div>
         </div>
 
-        {/* Photo Gallery */}
+        {/* Photo Gallery Carousel */}
         <div className="mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((index) => (
-              <div key={index} className="aspect-square border border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
-                <span className="text-gray-500">Photo</span>
-              </div>
-            ))}
-          </div>
+          <Carousel className="w-full max-w-4xl mx-auto">
+            <CarouselContent>
+              {[1, 2, 3, 4, 5].map((index) => (
+                <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                  <div className="p-1">
+                    <div className="aspect-square border border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                      <span className="text-gray-500">Photo {index}</span>
+                    </div>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
         </div>
 
         {/* About Section */}
@@ -188,70 +203,85 @@ export default function FarmDetailPage({ params }: { params: Promise<{ farmId: s
         {/* We Produce Section */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">We Produce</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {Object.entries(produceByCategory).map(([category, items]) => (
-              <div key={category} className="border border-gray-300 rounded-lg p-6 text-center">
-                <h3 className="font-semibold text-gray-900 mb-2 capitalize">
-                  {category === 'coffeeAndTea' ? 'Coffee & Tea' : 
-                   category === 'nutsSeeds' ? 'Nuts & Seeds' : 
-                   category === 'eggsAndMilk' ? 'Eggs & Milk' :
-                   category === 'herbsAndSpices' ? 'Herbs & Spices' :
-                   category.charAt(0).toUpperCase() + category.slice(1)}
-                </h3>
-                <div className="text-2xl mb-2">
-                  {category === 'honey' && '🍯'}
-                  {category === 'vegetables' && '🥕'}
-                  {category === 'fruits' && '🍎'}
-                  {category === 'coffeeAndTea' && '☕'}
-                  {category === 'nutsSeeds' && '🥜'}
-                  {category === 'eggsAndMilk' && '🥛'}
-                  {category === 'herbsAndSpices' && '🌿'}
-                  {category === 'grain' && '🌾'}
-                  {category === 'legumes' && '🫘'}
-                  {category === 'livestock' && '🐄'}
-                  {category === 'seafood' && '🐟'}
-                  {category === 'forestry' && '🌲'}
-                </div>
-                <p className="text-sm text-gray-600">
-                  {items.length} item{items.length !== 1 ? 's' : ''} available
-                </p>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {farm.produce.map((produce) => {
+              const primaryCategory = produce.category[0] || 'other';
+              const categoryIcon = {
+                'honey': '🍯',
+                'vegetables': '🥕',
+                'fruits': '🍎',
+                'coffeeAndTea': '☕',
+                'nutsSeeds': '🥜',
+                'eggsAndMilk': '🥛',
+                'herbs': '🌿',
+                'herbsAndSpices': '🌿',
+                'grain': '🌾',
+                'legumes': '🫘',
+                'livestock': '🐄',
+                'seafood': '🐟',
+                'forestry': '🌲',
+                'other': '🌱'
+              }[primaryCategory] || '🌱';
+
+              return (
+                <ProductCard 
+                  key={produce.id} 
+                  produce={produce} 
+                  categoryIcon={categoryIcon}
+                />
+              );
+            })}
           </div>
         </div>
 
         {/* Get in Touch Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Contact Info */}
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Get in Touch</h2>
-            <div className="space-y-3 mb-6">
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>📍</span>
-                <span>{farm.address.city} {farm.address.state}</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>📞</span>
-                <span>+61 123 456 789</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>✉️</span>
-                <span>contact@buyinggood.farm</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>🕒</span>
-                <span>{farm.opening_hours}</span>
+        <div className="mb-12">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Get in Touch</h2>
+          
+          {/* Contact Info and Map Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            {/* Contact Info Card */}
+            <div className="border border-gray-200 rounded-lg p-6">
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 text-gray-700">
+                  <MapPin className="w-4 h-4 mt-1 text-gray-500" />
+                  <div>
+                    <div className="font-medium text-blue-600 underline cursor-pointer">
+                      {farm.address.street} QLD {farm.address.zipCode}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 text-gray-700">
+                  <Phone className="w-4 h-4 text-gray-500" />
+                  <span>{farm.contact_phone}</span>
+                </div>
+                <div className="flex items-center gap-3 text-gray-700">
+                  <Mail className="w-4 h-4 text-gray-500" />
+                  <span>{farm.contact_email}</span>
+                </div>
+                <div className="flex items-start gap-3 text-gray-700">
+                  <Clock className="w-4 h-4 mt-1 text-gray-500" />
+                  <span>{farm.opening_hours}</span>
+                </div>
               </div>
             </div>
             
-            {/* Map placeholder */}
-            <div className="w-full h-32 bg-gray-100 border border-gray-300 rounded-lg flex items-center justify-center">
-              <span className="text-gray-500">Map</span>
+            {/* Map Card */}
+            <div className="border border-gray-200 rounded-lg p-6">
+              <div className="text-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Map</h3>
+              </div>
+              <div className="w-full h-48">
+                <Map address={farm.address} className="w-full h-full rounded" />
+              </div>
             </div>
           </div>
 
+          {/* Divider */}
+          <hr className="border-gray-300 mb-8" />
+
           {/* Contact Form */}
-          <div>
+          <div className="max-w-md mx-auto">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
@@ -259,9 +289,13 @@ export default function FarmDetailPage({ params }: { params: Promise<{ farmId: s
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name</FormLabel>
+                      <FormLabel className="text-sm font-medium text-gray-900">Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your name" {...field} />
+                        <Input 
+                          placeholder="Enter your name" 
+                          className="border-gray-300 focus:border-gray-500 focus:ring-gray-500"
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -273,9 +307,14 @@ export default function FarmDetailPage({ params }: { params: Promise<{ farmId: s
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email Address</FormLabel>
+                      <FormLabel className="text-sm font-medium text-gray-900">Email Address</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your email" type="email" {...field} />
+                        <Input 
+                          placeholder="Enter your email address" 
+                          type="email" 
+                          className="border-gray-300 focus:border-gray-500 focus:ring-gray-500"
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -284,12 +323,16 @@ export default function FarmDetailPage({ params }: { params: Promise<{ farmId: s
                 
                 <FormField
                   control={form.control}
-                  name="subject"
+                  name="company"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Subject</FormLabel>
+                      <FormLabel className="text-sm font-medium text-gray-900">Company <span className="text-gray-400">(optional)</span></FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter subject" {...field} />
+                        <Input 
+                          placeholder="Enter your company name" 
+                          className="border-gray-300 focus:border-gray-500 focus:ring-gray-500"
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -301,11 +344,11 @@ export default function FarmDetailPage({ params }: { params: Promise<{ farmId: s
                   name="message"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Message</FormLabel>
+                      <FormLabel className="text-sm font-medium text-gray-900">Message</FormLabel>
                       <FormControl>
                         <Textarea 
                           placeholder="Enter your message here..." 
-                          className="min-h-24"
+                          className="min-h-32 border-gray-300 focus:border-gray-500 focus:ring-gray-500 resize-none"
                           {...field} 
                         />
                       </FormControl>
@@ -314,7 +357,7 @@ export default function FarmDetailPage({ params }: { params: Promise<{ farmId: s
                   )}
                 />
                 
-                <Button type="submit" className="w-full bg-black text-white hover:bg-gray-800">
+                <Button type="submit" className="w-full bg-black text-white hover:bg-gray-800 h-12 text-base font-medium">
                   Submit
                 </Button>
               </form>

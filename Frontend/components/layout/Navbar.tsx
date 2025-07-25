@@ -18,6 +18,7 @@ export default function Navbar() {
 
       {/* Nav Links */}
       <div className="flex items-center gap-4">
+        <Link href="/about">Nearby Farms</Link>
         <Link href="/about">Our Story</Link>
         <Link href="/contact">Contact Us</Link>
       </div>
@@ -26,13 +27,26 @@ export default function Navbar() {
       <div>
         <SignedOut>
           <Link href="/sign-up">
-            <Button className="bg-primary text-white font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 cursor-pointer">
+            <Button
+              variant={"outline"}
+              className="border-primary text-primary font-medium cursor-pointer hover:bg-primary hover:text-white"
+            >
               I&apos;m a Farmer
             </Button>
           </Link>
         </SignedOut>
         <SignedIn>
-          <UserButton />
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard">
+              <Button
+                variant={"outline"}
+                className="border-primary text-primary font-medium cursor-pointer hover:bg-primary hover:text-white"
+              >
+                Dashboard
+              </Button>
+            </Link>
+            <UserButton />
+          </div>
         </SignedIn>
       </div>
     </nav>
