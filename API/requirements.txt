@@ -1,4 +1,6 @@
 Flask
 pymongo
 gunicorn
+clerk-backend-api
+python-dotenv
 numpy
