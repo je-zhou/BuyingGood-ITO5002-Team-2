@@ -4,7 +4,7 @@ import { Button } from "../ui/button";
 
 export default function WhatsInItForYou() {
   return (
-    <div className="grid grid-cols-3 justify-center items-center p-8 border rounded-lg m-12">
+    <div className="grid grid-cols-3 justify-center items-center p-8 border rounded-lg m-12 max-w-7xl mx-auto">
       {/* Copy */}
       <div className="col-span-2 flex flex-col p-4 pr-16">
         <h2 className="text-2xl font-bold">What&apos;s in it for you?</h2>
@@ -33,11 +33,11 @@ export default function WhatsInItForYou() {
 
       <div className="relative h-full w-full">
         <Image
-          src={"/logo.png"}
+          src={"/farmer.png"}
           // src={""}
           alt="img"
           fill
-          objectFit="contain"
+          objectFit="cover"
           className="border h-full w-full rounded"
         ></Image>
       </div>
