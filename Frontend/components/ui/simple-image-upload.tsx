@@ -1,0 +1,144 @@
+"use client";
+
+import { CldUploadWidget } from 'next-cloudinary';
+import { Button } from '@/components/ui/button';
+import { Upload, X, Loader2 } from 'lucide-react';
+import Image from 'next/image';
+import { useState } from 'react';
+
+interface SimpleImageUploadProps {
+  value: string[];
+  onChange: (urls: string[]) => void;
+  maxFiles?: number;
+  folder?: string;
+  disabled?: boolean;
+}
+
+export default function SimpleImageUpload({
+  value = [],
+  onChange,
+  maxFiles = 5,
+  folder = 'buyinggood',
+  disabled = false
+}: SimpleImageUploadProps) {
+  const [uploading, setUploading] = useState(false);
+  const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
+
+  const handleUploadStart = () => {
+    setUploading(true);
+  };
+
+  const handleUploadSuccess = (result: any) => {
+    const newUrl = result.info.secure_url;
+    onChange([...value, newUrl]);
+    setUploading(false);
+  };
+
+  const handleUploadError = () => {
+    setUploading(false);
+  };
+
+  const handleImageLoad = (url: string) => {
+    setLoadingImages(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(url);
+      return newSet;
+    });
+  };
+
+  const handleImageLoadStart = (url: string) => {
+    setLoadingImages(prev => new Set(prev).add(url));
+  };
+
+  const handleRemove = (indexToRemove: number) => {
+    onChange(value.filter((_, index) => index !== indexToRemove));
+  };
+
+  const canAddMore = value.length < maxFiles;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {value.map((url, index) => (
+          <div key={index} className="relative aspect-square border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
+            {loadingImages.has(url) && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
+                <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+              </div>
+            )}
+            <Image
+              src={url}
+              alt={`Upload ${index + 1}`}
+              fill
+              className="object-cover"
+              onLoadStart={() => handleImageLoadStart(url)}
+              onLoad={() => handleImageLoad(url)}
+              onError={() => handleImageLoad(url)}
+            />
+            {!disabled && (
+              <Button
+                onClick={() => handleRemove(index)}
+                size="sm"
+                variant="destructive"
+                className="absolute top-2 right-2 h-6 w-6 p-0 z-20"
+                type="button"
+              >
+                <X className="w-3 h-3" />
+              </Button>
+            )}
+          </div>
+        ))}
+        
+        {canAddMore && !disabled && (
+          <CldUploadWidget
+            uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+            options={{
+              folder: folder,
+              transformation: {
+                width: 800,
+                height: 600,
+                crop: 'fill',
+                quality: 'auto'
+              }
+            }}
+            onOpen={handleUploadStart}
+            onSuccess={handleUploadSuccess}
+            onError={handleUploadError}
+          >
+            {({ open }) => (
+              <div
+                onClick={() => !uploading && open()}
+                className={`aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 ${
+                  uploading ? 'cursor-not-allowed opacity-50' : 'hover:bg-gray-100 cursor-pointer'
+                }`}
+              >
+                <div className="text-center">
+                  {uploading ? (
+                    <>
+                      <Loader2 className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">Uploading...</p>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">Upload Photo</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {value.length}/{maxFiles} images
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </CldUploadWidget>
+        )}
+      </div>
+      
+      {value.length >= maxFiles && (
+        <p className="text-sm text-gray-500">
+          Maximum {maxFiles} images reached
+        </p>
+      )}
+    </div>
+  );
+}

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Save } from "lucide-react";
+import SimpleImageUpload from "@/components/ui/simple-image-upload";
 
 interface ProductCreateModalProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ interface CreateProductData {
   minimumOrderUnit: string;
   availabilityStartMonth: number;
   availabilityEndMonth: number;
+  images: string[];
 }
 
 const categories = [
@@ -90,7 +92,8 @@ export default function ProductCreateModal({
     minimumOrderQuantity: 1,
     minimumOrderUnit: "",
     availabilityStartMonth: 1,
-    availabilityEndMonth: 12
+    availabilityEndMonth: 12,
+    images: []
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -169,7 +172,7 @@ export default function ProductCreateModal({
           endMonth: formData.availabilityEndMonth
         }],
         farmId,
-        images: [],
+        images: formData.images,
         createdAt: new Date().toISOString()
       };
       
@@ -201,7 +204,8 @@ export default function ProductCreateModal({
         minimumOrderQuantity: 1,
         minimumOrderUnit: "",
         availabilityStartMonth: 1,
-        availabilityEndMonth: 12
+        availabilityEndMonth: 12,
+        images: []
       });
       setErrors({});
       onClose();
@@ -334,6 +338,20 @@ export default function ProductCreateModal({
               </Select>
               {errors.minimumOrderUnit && <p className="text-red-500 text-sm">{errors.minimumOrderUnit}</p>}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Product Images</Label>
+            <SimpleImageUpload
+              value={formData.images}
+              onChange={(images) => handleInputChange('images', images)}
+              maxFiles={5}
+              folder="products" 
+              disabled={saving}
+            />
+            <p className="text-sm text-gray-500">
+              Upload images of your product to help buyers see what they're purchasing.
+            </p>
           </div>
 
           <div className="space-y-4">

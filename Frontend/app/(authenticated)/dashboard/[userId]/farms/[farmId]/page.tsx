@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import ProductCard from "@/components/ProductCard/ProductCard";
 import Map from "@/components/ui/map";
-import { MapPin, Phone, Mail, Clock, Edit, Plus, Trash2, ArrowLeft, Eye, Save, Upload, X } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, Edit, Plus, Trash2, ArrowLeft, Eye, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import ProductCreateModal from "@/components/ProductCreateModal/ProductCreateModal";
+import SimpleImageUpload from "@/components/ui/simple-image-upload";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -218,17 +219,8 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
     }, 1000);
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files) {
-      // Mock image upload - replace with real upload when backend is ready
-      const newImageUrls = Array.from(files).map(() => `/api/placeholder/400/300?${Date.now()}`);
-      setFarmImages(prev => [...prev, ...newImageUrls]);
-    }
-  };
-
-  const handleDeleteImage = (index: number) => {
-    setFarmImages(prev => prev.filter((_, i) => i !== index));
+  const handleImageChange = (urls: string[]) => {
+    setFarmImages(urls);
   };
 
   const togglePreviewMode = () => {
@@ -391,35 +383,13 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
           ) : (
             <div>
               <Label className="text-sm font-medium text-gray-700 mb-4 block">Farm Photos</Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {farmImages.map((image, index) => (
-                  <div key={index} className="relative aspect-square border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
-                    <img src={image} alt={`Farm photo ${index + 1}`} className="w-full h-full object-cover" />
-                    <Button
-                      onClick={() => handleDeleteImage(index)}
-                      size="sm"
-                      variant="destructive"
-                      className="absolute top-2 right-2 h-6 w-6 p-0"
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                ))}
-                <div className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer">
-                  <label htmlFor="image-upload" className="cursor-pointer text-center">
-                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">Upload Photo</p>
-                    <input
-                      id="image-upload"
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-              </div>
+              <SimpleImageUpload
+                value={farmImages}
+                onChange={handleImageChange}
+                maxFiles={6}
+                folder="farms"
+                disabled={saving}
+              />
             </div>
           )}
         </div>
