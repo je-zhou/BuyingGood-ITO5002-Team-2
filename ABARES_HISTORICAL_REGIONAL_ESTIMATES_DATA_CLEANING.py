@@ -28,3 +28,23 @@ df_clean = df_clean[['abares_region','year','cost']]
 
 # Export cleaned data to csv
 df_clean.to_csv('ABARES_HISTORICAL_REGIONAL_ESTIMATES_CLEAN.csv', index = False)
+
+## INSERT TO MONGODB
+
+from pymongo import MongoClient
+
+# Define database username, password and connection string
+db_username = ''
+db_password = ''
+connect_str = 'mongodb+srv://' + db_username + ':' + db_password + '@buyinggood.jxdin83.mongodb.net/'
+
+# MongoDB connection
+client = MongoClient(connect_str)
+db = client['analytics']
+collection = db['freight_cost']
+
+# Delete all documents in the collection
+delete = collection.delete_many({})
+
+# Insert updated documents to collection
+collection.insert_many(df_clean.to_dict('records'))
