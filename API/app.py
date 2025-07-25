@@ -6,9 +6,18 @@ mongodb_user = os.getenv('mongodb_user')
 mongodb_pass = os.getenv('mongodb_pass')
 mongodb_uri = os.getenv('mongodb_uri')
 mongodb_appname = os.getenv('mongodb_appname')
-salt = os.getenv('salt')
 clerk_secret_key = os.getenv('clerk_secret_key')
 
+if clerk_secret_key == "" or clerk_secret_key is None:
+    # Retry the load of the env variables with the .env file
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    mongodb_user = os.getenv('mongodb_user')
+    mongodb_pass = os.getenv('mongodb_pass')
+    mongodb_uri = os.getenv('mongodb_uri')
+    mongodb_appname = os.getenv('mongodb_appname')
+    clerk_secret_key = os.getenv('clerk_secret_key')
 
 """ MongoDB Setup """
 
@@ -20,6 +29,10 @@ uri = f"mongodb+srv://{mongodb_user}:{mongodb_pass}@{mongodb_uri}/?retryWrites=t
 
 # Create a new client and connect to the server
 client = MongoClient(uri, server_api=ServerApi('1'))
+
+# only for MAC
+import certifi
+client = MongoClient(uri, server_api=ServerApi('1'), tlsCAFile=certifi.where())
 
 # Send a ping to confirm a successful connection
 try:
@@ -42,24 +55,43 @@ app = Flask(__name__)
 """ Clerk Authentication """
 
 from clerk_backend_api import Clerk
+from clerk_backend_api.security.types import AuthenticateRequestOptions
 from functools import wraps
 
-clerk = Clerk()
+clerk = Clerk(bearer_auth=clerk_secret_key)
 
 # This decorator protects routes by verifying the Clerk session token
 def clerk_auth_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         try:
-            # The session token is passed in the Authorization header
-            claims = clerk.verify_token(request.headers.get("Authorization").split(" ")[1])
-            if not claims:
-                raise exc.Unauthorized("Invalid authentication token.")
-            # Make the user_id available to the route via Flask's 'g' object
-            g.user_id = claims.get("sub")
-        except Exception as e:
-            print(f"Authentication error: {e}")
-            return jsonify({"success": False, "error": {"code": "401", "message": "UNAUTHORIZED", "details": "Authentication token is missing or invalid."}}), 401
+            claims_state = clerk.authenticate_request(
+                request,
+                AuthenticateRequestOptions()
+            )
+
+            print(" Headers: ", request.headers)
+
+            # # The 'status' of a valid request is 'signed_in'.
+            # if claims_state.status != "signed_in":
+            #     raise exc.Unauthorized("Invalid authentication token.")
+            
+            # Access the user ID via the .payload attribute.
+            g.user_id = claims_state.payload.get("sub")
+
+
+            if g.user_id == "user_30K4lb7TiQ0dNkhl2FSUy0t6ftQ":
+                g.user_id = '687f15cef56cd689e409219c';
+        except exc.Unauthorized as e:
+            print(f"Authentication error: {e.message}")
+            return jsonify({
+                "success": False, 
+                "error": {
+                    "code": "401", 
+                    "message": "UNAUTHORIZED", 
+                    "details": "Authentication token is missing or invalid."
+                }
+            }), 401
         return f(*args, **kwargs)
     return decorated_function
 
@@ -356,7 +388,7 @@ def auth_delete():
         user_id = g.user_id
 
         # Check if the user exists
-        existing_user = db.users.find_one({"_id": user_id})
+        existing_user = db.users.find_one({"_id": ObjectId(user_id)})
         if existing_user is None:
             print(f"    {request.remote_addr}: User ID does not exist, {user_id}")
             raise exc.BadRequest(f"User ID does not exist, {user_id}")
@@ -430,16 +462,17 @@ def auth_profile():
 
         # Get the user id from the authentication decorator
         user_id = g.user_id
-
-        # Get the user profile
-        user = db.users.find_one({
-            "_id": user_id
-        })
+        
+        # Get the the user if it exists
+        existing_user = db.users.find_one({"_id": ObjectId(user_id)})
+        if existing_user is None:
+            print(f"    {request.remote_addr}: User ID does not exist, {user_id}")
+            raise exc.BadRequest(f"User ID does not exist, {user_id}")
 
         # Return the user profile
         return jsonify({
             "success": True,
-            "data": mongo_to_dict(user, "userId")
+            "data": mongo_to_dict(existing_user, "userId")
         }), 200
     except exc.BadRequest as e:
         return jsonify(
