@@ -161,7 +161,7 @@ def auth_register():
         db = client.authentication
 
         # Try to get the request body and make sure it is valid
-        data = request.json
+        data = request.json.get("data")
         print(f"{request.remote_addr}: Request body received, {data}")
 
         # for key in ["email","firstName","lastName","phoneNumber"]:
