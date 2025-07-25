@@ -219,7 +219,7 @@ const FarmsContent = ({ userId }: { userId?: string }) => {
 };
 
 // Skeleton loader component for farm tiles
-function FarmTileSkeleton({ userId }: { userId?: string }) {
+function FarmTileSkeleton() {
   return (
     <div className="rounded w-full flex flex-col border border-gray-200 animate-pulse">
       <div className="w-full border-b border-gray-200 rounded-t flex items-center p-4 justify-between">
@@ -246,7 +246,7 @@ function FarmsSkeletonLoader({ userId }: { userId?: string }) {
     <div className="grid md:grid-cols-2 xl:grid-cols-3 auto-rows-[minmax(14rem,_1fr)] gap-4">
       <CreateFarmTile userId={userId} />
       {[...Array(2)].map((_, index) => (
-        <FarmTileSkeleton key={index} userId={userId} />
+        <FarmTileSkeleton key={index} />
       ))}
     </div>
   );

@@ -28,6 +28,7 @@ export default function SimpleImageUpload({
     setUploading(true);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleUploadSuccess = (result: any) => {
     const newUrl = result.info.secure_url;
     onChange([...value, newUrl]);
@@ -98,12 +99,6 @@ export default function SimpleImageUpload({
             uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
             options={{
               folder: folder,
-              transformation: {
-                width: 800,
-                height: 600,
-                crop: 'fill',
-                quality: 'auto'
-              },
               styles: {
                 palette: {
                   window: "#FFFFFF",
@@ -123,8 +118,7 @@ export default function SimpleImageUpload({
                 frame: {
                   background: "#FFFFFF"
                 }
-              },
-              zIndex: 99999
+              }
             }}
             onOpen={handleUploadStart}
             onSuccess={handleUploadSuccess}

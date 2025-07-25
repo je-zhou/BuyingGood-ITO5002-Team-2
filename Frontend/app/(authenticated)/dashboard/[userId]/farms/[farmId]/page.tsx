@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import ProductCard from "@/components/ProductCard/ProductCard";
@@ -12,13 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import SimpleImageUpload from "@/components/ui/simple-image-upload";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 
 interface Farm {
   farmId: string;
@@ -371,8 +365,8 @@ export default function FarmManagement({ params }: { params: Promise<{ userId: s
                 {farmImages.map((image, index) => (
                   <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
                     <div className="p-1">
-                      <div className="aspect-square border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
-                        <img src={image} alt={`Farm photo ${index + 1}`} className="w-full h-full object-cover" />
+                      <div className="aspect-square border border-gray-300 rounded-lg overflow-hidden bg-gray-50 relative">
+                        <Image src={image} alt={`Farm photo ${index + 1}`} className="object-cover" fill />
                       </div>
                     </div>
                   </CarouselItem>

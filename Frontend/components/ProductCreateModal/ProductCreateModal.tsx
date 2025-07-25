@@ -105,7 +105,7 @@ export default function ProductCreateModal({
   const router = useRouter();
   const isEditing = !!editingProduct;
   
-  const getInitialFormData = (): CreateProductData => {
+  const getInitialFormData = React.useCallback((): CreateProductData => {
     if (editingProduct) {
       return {
         name: editingProduct.name,
@@ -132,7 +132,7 @@ export default function ProductCreateModal({
       availabilityEndMonth: 12,
       images: []
     };
-  };
+  }, [editingProduct]);
 
   const [formData, setFormData] = useState<CreateProductData>(getInitialFormData());
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -142,7 +142,7 @@ export default function ProductCreateModal({
   React.useEffect(() => {
     setFormData(getInitialFormData());
     setErrors({});
-  }, [editingProduct, isOpen]);
+  }, [editingProduct, isOpen, getInitialFormData]);
 
   const handleInputChange = (field: string, value: string | number | string[]) => {
     setFormData(prev => ({
@@ -408,7 +408,7 @@ export default function ProductCreateModal({
               disabled={saving}
             />
             <p className="text-sm text-gray-500">
-              Upload images of your product to help buyers see what they're purchasing.
+              Upload images of your product to help buyers see what they&apos;re purchasing.
             </p>
           </div>
 

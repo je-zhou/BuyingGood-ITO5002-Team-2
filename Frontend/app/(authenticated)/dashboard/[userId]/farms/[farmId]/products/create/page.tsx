@@ -385,7 +385,7 @@ export default function CreateProductPage({ params }: { params: Promise<{ userId
                   placeholder="0.00"
                 />
                 <p className="text-sm text-gray-500">
-                  Set to $0.00 if you want this product to appear as "Available on Request" to consumers
+                  Set to $0.00 if you want this product to appear as &quot;Available on Request&quot; to consumers
                 </p>
                 {errors.pricePerUnit && <p className="text-red-500 text-sm">{errors.pricePerUnit}</p>}
               </div>
@@ -451,7 +451,7 @@ export default function CreateProductPage({ params }: { params: Promise<{ userId
                 disabled={saving}
               />
               <p className="text-sm text-gray-500">
-                Upload images of your product to help buyers see what they're purchasing.
+                Upload images of your product to help buyers see what they&apos;re purchasing.
               </p>
             </div>
 
