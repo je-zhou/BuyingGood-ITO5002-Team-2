@@ -76,4 +76,4 @@ collection = db['crop_production']
 delete = collection.delete_many({})
 
 # Insert updated documents to collection
-collection.insert_many(df_clean.to_dict('records'))
+collection.insert_many(df_comb.to_dict('records'))
