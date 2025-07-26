@@ -416,16 +416,19 @@ def create_farm():
     data["createdAt"] = datetime.datetime.now()
 
     # Add the farm
-    db.farms.insert_one(data)
+    farmId = db.farms.insert_one(data).inserted_id
 
     # Replace the ownerId with the clerk ID for the frontend
     data["ownerId"] = g.clerk_id
+
+    # Get the farm data from mongodb
+    farm = db.farms.find_one({"_id":farmId})
 
     # Return the success message
     return jsonify({
         "success": True,
         "message": "Farm registered successfully",
-        "data": data
+        "data": mongo_to_dict(farm, "farmId")
     }), 201
 
 def get_farms():
@@ -543,6 +546,7 @@ def update_farm(farmId : str):
         {'$set': set_data}
     )
 
+    # Get the farm data from mongodb
     farm = db.farms.find_one({"_id": ObjectId(farmId)})
 
     # Return the success message
@@ -711,13 +715,16 @@ def add_farm_produce(farmId : str):
     data["modifiedAt"] = datetime.datetime.now()
 
     # Add the produce item
-    db.produce.insert_one(data)
+    produceId = db.produce.insert_one(data).inserted_id
+
+    # Get the produce document
+    produce = db.produce.find_one({"_id":produceId})
 
     # Return the success message
     return jsonify({
         "success": True,
         "message": "Produce added successfully",
-        "data": data
+        "data": mongo_to_dict(produce,"produceId")
     }), 201
 
 @app.route("/produce/<produceId>", methods=["PUT", "DELETE", "GET"])
