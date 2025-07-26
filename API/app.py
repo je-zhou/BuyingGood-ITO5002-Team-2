@@ -294,7 +294,7 @@ def auth_update():
                 "phoneNumber": phone_number,
                 "email": email_address,
                 "profileImage": data.get("profile_image_url"),
-                "updatedAt": dt_object
+                "modifiedAt": dt_object
             }}
         )
         print(f"    {request.remote_addr}: user_id created, {user_id}")
