@@ -88,7 +88,9 @@ def clerk_auth_required(f):
             
             g.clerk_id = claims_state.payload.get("sub")
 
-            user = db.users.find_one({"clerk_id": g.clerk_id})
+            user = db.users.find_one({"clerkId": g.clerk_id})
+            if user is None:
+                raise exc.BadRequest(f"User not found, {g.clerk_id}")
             
             # Access the user ID via the .payload attribute.
             g.user_id = str(user["_id"])
