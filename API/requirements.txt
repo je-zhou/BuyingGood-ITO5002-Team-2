@@ -4,3 +4,4 @@ gunicorn
 clerk-backend-api
 python-dotenv
 numpy
+flask-cors

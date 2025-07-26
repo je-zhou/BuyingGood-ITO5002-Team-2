@@ -51,6 +51,10 @@ import numpy as np
 
 app = Flask(__name__)
 
+from flask_cors import CORS, cross_origin
+
+cors = CORS(app) # allow CORS for all domains on all routes.
+app.config['CORS_HEADERS'] = 'Content-Type'
 
 """ Clerk Authentication """
 
@@ -71,6 +75,8 @@ def clerk_auth_required(f):
             )
 
             print(" Headers: ", request.headers)
+
+            # TODO: actually verify the user token is still valid
 
             # # The 'status' of a valid request is 'signed_in'.
             # if claims_state.status != "signed_in":
@@ -141,19 +147,12 @@ def mongo_to_dict(obj, id_name="id", exclusion_list=[]):
 """ Authentication Endpoints """
 
 @app.route("/auth/register", methods=["POST"])
+@cross_origin()
 def auth_register():
     """
-        Register a new farmer email and return a user id
+        Register a new farmer email
     
         Endpoint: POST /auth/register
-
-        Request Body:
-        {
-            "email": "farmer@example.com",
-            "firstName": "John",
-            "lastName": "Doe",
-            "phoneNumber": "+1234567890"
-        }
 
         Response (201 Created)
     """
@@ -163,10 +162,6 @@ def auth_register():
         # Try to get the request body and make sure it is valid
         data = request.json.get("data")
         print(f"{request.remote_addr}: Request body received, {data}")
-
-        # for key in ["email","firstName","lastName","phoneNumber"]:
-        #     if not key in list(data.keys()):
-        #         raise exc.BadRequest(f"Missing parameter, {key}")
             
         phone_number = ""
         try:
@@ -267,6 +262,7 @@ def auth_register():
         ), 500
 
 @app.route("/auth/update", methods=["POST"])
+@cross_origin()
 @clerk_auth_required
 def auth_update():
     """
@@ -386,6 +382,7 @@ def auth_update():
         ), 500
 
 @app.route("/auth/delete", methods=["POST"])
+@cross_origin()
 @clerk_auth_required
 def auth_delete():
     """
@@ -471,6 +468,7 @@ def auth_delete():
         ), 500
 
 @app.route('/auth/profile', methods=["GET"])
+@cross_origin()
 @clerk_auth_required
 def auth_profile():
     """
@@ -497,56 +495,15 @@ def auth_profile():
             "success": True,
             "data": mongo_to_dict(existing_user, "userId")
         }), 200
-    except exc.BadRequest as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "400",
-                    "message": "BAD_REQUEST",
-                    "details": e.message
-                }
-            }
-        ), 400
-    except exc.Unauthorized as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "401",
-                    "message": "UNAUTHORIZED",
-                    "details": e.message
-                }
-            }
-        ), 401
-    except exc.Forbidden as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "403",
-                    "message": "FORBIDDEN",
-                    "details": e.message
-                }
-            }
-        ), 403
     except Exception as e:
         print(e)
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "500",
-                    "message": "INTERNAL_ERROR",
-                    "details": "The server encountered an unexpected condition that prevented it from fulfilling the request."
-                }
-            }
-        ), 500
+        return exc.handle_error(e)
 
 
 """ Farm Endpoints """
 
 @app.route('/farms', methods=["POST", "GET"])
+@cross_origin()
 def farms():
     try:
         db = client.farm_details
@@ -614,53 +571,12 @@ def farms():
                     }
                 }
             }), 200
-    except exc.BadRequest as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "400",
-                    "message": "BAD_REQUEST",
-                    "details": e.message
-                }
-            }
-        ), 400
-    except exc.Unauthorized as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "401",
-                    "message": "UNAUTHORIZED",
-                    "details": e.message
-                }
-            }
-        ), 401
-    except exc.Forbidden as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "403",
-                    "message": "FORBIDDEN",
-                    "details": e.message
-                }
-            }
-        ), 403
     except Exception as e:
         print(e)
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "500",
-                    "message": "INTERNAL_ERROR",
-                    "details": "The server encountered an unexpected condition that prevented it from fulfilling the request."
-                }
-            }
-        ), 500
+        return exc.handle_error(e)
 
 @app.route('/farms/<farmId>', methods=["PUT", "DELETE", "GET"])
+@cross_origin()
 def farm(farmId : str):
     try:
         db = client.farm_details
@@ -689,53 +605,12 @@ def farm(farmId : str):
                 "success": True,
                 "data": mongo_to_dict(farm, "farmId") # TODO: add exclusion list
             }), 200
-    except exc.BadRequest as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "400",
-                    "message": "BAD_REQUEST",
-                    "details": e.message
-                }
-            }
-        ), 400
-    except exc.Unauthorized as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "401",
-                    "message": "UNAUTHORIZED",
-                    "details": e.message
-                }
-            }
-        ), 401
-    except exc.Forbidden as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "403",
-                    "message": "FORBIDDEN",
-                    "details": e.message
-                }
-            }
-        ), 403
     except Exception as e:
         print(e)
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "500",
-                    "message": "INTERNAL_ERROR",
-                    "details": "The server encountered an unexpected condition that prevented it from fulfilling the request."
-                }
-            }
-        ), 500
+        return exc.handle_error(e)
 
 @app.route('/farms/<farmId>/produce', methods=["POST", "GET"])
+@cross_origin()
 def farm_produce(farmId : str):
     try:
         db = client.farm_details
@@ -799,53 +674,12 @@ def farm_produce(farmId : str):
                     }
                 }
             }), 200
-    except exc.BadRequest as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "400",
-                    "message": "BAD_REQUEST",
-                    "details": e.message
-                }
-            }
-        ), 400
-    except exc.Unauthorized as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "401",
-                    "message": "UNAUTHORIZED",
-                    "details": e.message
-                }
-            }
-        ), 401
-    except exc.Forbidden as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "403",
-                    "message": "FORBIDDEN",
-                    "details": e.message
-                }
-            }
-        ), 403
     except Exception as e:
         print(e)
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "500",
-                    "message": "INTERNAL_ERROR",
-                    "details": "The server encountered an unexpected condition that prevented it from fulfilling the request."
-                }
-            }
-        ), 500
+        return exc.handle_error(e)
 
 @app.route("/produce/<produceId>", methods=["PUT", "DELETE", "GET"])
+@cross_origin()
 def id_produce(produceId : str):
     try:
         db = client.farm_details
@@ -895,153 +729,27 @@ def id_produce(produceId : str):
                 "success": True,
                 "data": produce_dict
             })
-    except exc.BadRequest as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "400",
-                    "message": "BAD_REQUEST",
-                    "details": e.message
-                }
-            }
-        ), 400
-    except exc.Unauthorized as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "401",
-                    "message": "UNAUTHORIZED",
-                    "details": e.message
-                }
-            }
-        ), 401
-    except exc.Forbidden as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "403",
-                    "message": "FORBIDDEN",
-                    "details": e.message
-                }
-            }
-        ), 403
     except Exception as e:
         print(e)
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "500",
-                    "message": "INTERNAL_ERROR",
-                    "details": "The server encountered an unexpected condition that prevented it from fulfilling the request."
-                }
-            }
-        ), 500
+        return exc.handle_error(e)
 
 @app.route('/produce', methods=["GET"])
 def produce():
     try:
         # TODO: Not Authenticated
         pass
-    except exc.BadRequest as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "400",
-                    "message": "BAD_REQUEST",
-                    "details": e.message
-                }
-            }
-        ), 400
-    except exc.Unauthorized as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "401",
-                    "message": "UNAUTHORIZED",
-                    "details": e.message
-                }
-            }
-        ), 401
-    except exc.Forbidden as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "403",
-                    "message": "FORBIDDEN",
-                    "details": e.message
-                }
-            }
-        ), 403
     except Exception as e:
         print(e)
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "500",
-                    "message": "INTERNAL_ERROR",
-                    "details": "The server encountered an unexpected condition that prevented it from fulfilling the request."
-                }
-            }
-        ), 500
+        return exc.handle_error(e)
 
 @app.route('/categories', methods=["GET"])
 def categories():
     try:
         # TODO: Not Authenticated
         pass
-    except exc.BadRequest as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "400",
-                    "message": "BAD_REQUEST",
-                    "details": e.message
-                }
-            }
-        ), 400
-    except exc.Unauthorized as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "401",
-                    "message": "UNAUTHORIZED",
-                    "details": e.message
-                }
-            }
-        ), 401
-    except exc.Forbidden as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "403",
-                    "message": "FORBIDDEN",
-                    "details": e.message
-                }
-            }
-        ), 403
     except Exception as e:
         print(e)
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "500",
-                    "message": "INTERNAL_ERROR",
-                    "details": "The server encountered an unexpected condition that prevented it from fulfilling the request."
-                }
-            }
-        ), 500
+        return exc.handle_error(e)
 
 
 """ Run Flask App """
