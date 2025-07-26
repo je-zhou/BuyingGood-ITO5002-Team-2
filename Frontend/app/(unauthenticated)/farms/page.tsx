@@ -21,7 +21,7 @@ interface Farm {
   contact_email: string;
   contact_phone: string;
   opening_hours: string;
-  produce: Produce[];
+  produce?: Produce[];
   ownerId: string;
   createdAt: string;
 }
@@ -191,7 +191,10 @@ function FarmsPageContent() {
       
       // Update pagination state
       currentPageRef.current = data.data.pagination.currentPage;
-      setHasNextPage(data.data.pagination.currentPage < data.data.pagination.totalPages);
+      // Stop loading more if we've reached the last page OR if the returned farms array is empty
+      const hasMorePages = data.data.pagination.currentPage < data.data.pagination.totalPages;
+      const hasResults = data.data.farms.length > 0;
+      setHasNextPage(hasMorePages && hasResults);
       
     } catch (err) {
       // Show the full detailed error message for developers
@@ -379,7 +382,7 @@ function FarmsPageContent() {
                   {/* Produce Buttons */}
                   <div className="flex-shrink-0">
                     <div className="flex flex-wrap gap-2 justify-end">
-                      {farm.produce.map((produce) => (
+                      {farm.produce?.map((produce) => (
                         <div key={produce.id} className="relative">
                           <Button
                             variant="outline"
@@ -405,7 +408,11 @@ function FarmsPageContent() {
                               </div>
                             )}
                         </div>
-                      ))}
+                      )) || (
+                        <div className="text-sm text-gray-500 italic">
+                          No produce listed
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -29,7 +29,7 @@ interface Farm {
   contact_email: string;
   contact_phone: string;
   opening_hours: string;
-  produce: Produce[];
+  produce?: Produce[];
   ownerId: string;
   createdAt: string;
 }
@@ -195,8 +195,9 @@ export default function FarmDetailPage({ params }: { params: Promise<{ farmId: s
         {/* We Produce Section */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">We Produce</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {farm.produce.map((produce) => {
+          {farm.produce && farm.produce.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {farm.produce.map((produce) => {
               const primaryCategory = produce.category[0] || 'other';
               const categoryIcon = {
                 'honey': '🍯',
@@ -222,8 +223,13 @@ export default function FarmDetailPage({ params }: { params: Promise<{ farmId: s
                   categoryIcon={categoryIcon}
                 />
               );
-            })}
-          </div>
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p>No produce items are currently listed for this farm.</p>
+            </div>
+          )}
         </div>
 
         {/* Get in Touch Section */}
