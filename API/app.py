@@ -176,7 +176,6 @@ def auth_register():
             pass
 
         email_address = ""
-        print 
         for email in data.get("email_addresses"):
             if email["id"] == data.get("primary_email_address_id"):
                 email_address = email["email_address"]
@@ -201,13 +200,15 @@ def auth_register():
         # Attempt to create the user in the database
         user_id = db.users.insert_one({
             "firstName": data.get("first_name"),
-            "lastName": data.get("family_name"),
+            "lastName": data.get("last_name"),
             "birthday": birthday,
             "gender": data.get("gender"),
             "phoneNumber": phone_number,
             "email": email_address,
             "profileImage": data.get("profile_image_url"),
-            "updatedAt": dt_object
+            "clerkId": data.get("id"),
+            "createdAt": dt_object,
+            "modifiedAt": dt_object
         }).inserted_id
         print(f"    {request.remote_addr}: user_id created, {user_id}")
 
@@ -216,9 +217,10 @@ def auth_register():
             "message": "Farmer registered successfully",
             "data": {
                 "userId": str(user_id),
+                "clerkId": data.get("id"),
                 "email": email_address,
                 "firstName": data.get("first_name"),
-                "lastName": data.get("first_name")
+                "lastName": data.get("last_name")
             }
         }), 201
     except Exception as e:
