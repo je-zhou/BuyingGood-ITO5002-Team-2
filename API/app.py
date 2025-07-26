@@ -78,6 +78,7 @@ def clerk_auth_required(f):
             print(" Headers: ", request.headers)
 
             # TODO: actually verify the user token is still valid
+            print(" Payload: ", claims_state.payload)
 
             # Get the our id for this user
             db = client.authentication
