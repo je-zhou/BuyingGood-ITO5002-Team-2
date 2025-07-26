@@ -78,11 +78,14 @@ def clerk_auth_required(f):
             print(" Headers: ", request.headers)
 
             # TODO: actually verify the user token is still valid
-            print(" Payload: ", claims_state.payload)
+            print(" Payload: ", claims_state)
 
             # Get the our id for this user
             db = client.authentication
 
+            if claims_state.payload is None:
+                raise exc.Unauthorized("Invalid authentication data was set to an authenticated endpoint.")
+            
             g.clerk_id = claims_state.payload.get("sub")
 
             user = db.user.find_one({"clerk_id": g.clerk_id})
