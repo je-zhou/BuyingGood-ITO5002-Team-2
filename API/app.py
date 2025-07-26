@@ -19,6 +19,7 @@ if clerk_secret_key == "" or clerk_secret_key is None:
     mongodb_appname = os.getenv('mongodb_appname')
     clerk_secret_key = os.getenv('clerk_secret_key')
 
+
 """ MongoDB Setup """
 
 from pymongo.mongo_client import MongoClient
@@ -78,15 +79,16 @@ def clerk_auth_required(f):
 
             # TODO: actually verify the user token is still valid
 
-            # # The 'status' of a valid request is 'signed_in'.
-            # if claims_state.status != "signed_in":
-            #     raise exc.Unauthorized("Invalid authentication token.")
+            # Get the our id for this user
+            db = client.authentication
+
+            g.clerk_id = claims_state.payload.get("sub")
+
+            user = db.user.find_one({"clerk_id": g.clerk_id})
             
             # Access the user ID via the .payload attribute.
-            g.user_id = claims_state.payload.get("sub")
-
-            if g.user_id == "user_30K4lb7TiQ0dNkhl2FSUy0t6ftQ":
-                g.user_id = '687f15cef56cd689e409219c'
+            g.user_id = str(user["_id"])
+            print(f"Authenticated {g.clerk_id} as {g.user_id}")
         except exc.Unauthorized as e:
             print(f"Authentication error: {e.message}")
             return jsonify({
@@ -150,7 +152,7 @@ def mongo_to_dict(obj, id_name="id", exclusion_list=[]):
 @cross_origin()
 def auth_register():
     """
-        Register a new farmer email
+        Register a new farmer account
     
         Endpoint: POST /auth/register
 
@@ -195,7 +197,7 @@ def auth_register():
         # Attempt to create the user in the database
         user_id = db.users.insert_one({
             "firstName": data.get("first_name"),
-            "lastName": data.get("first_name"),
+            "lastName": data.get("family_name"),
             "birthday": birthday,
             "gender": data.get("gender"),
             "phoneNumber": phone_number,
@@ -215,51 +217,9 @@ def auth_register():
                 "lastName": data.get("first_name")
             }
         }), 201
-    except exc.BadRequest as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "400",
-                    "message": "BAD_REQUEST",
-                    "details": e.message
-                }
-            }
-        ), 400
-    except exc.Unauthorized as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "401",
-                    "message": "UNAUTHORIZED",
-                    "details": e.message
-                }
-            }
-        ), 401
-    except exc.Forbidden as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "403",
-                    "message": "FORBIDDEN",
-                    "details": e.message
-                }
-            }
-        ), 403
     except Exception as e:
         print(e)
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "500",
-                    "message": "INTERNAL_ERROR",
-                    "details": "The server encountered an unexpected condition that prevented it from fulfilling the request."
-                }
-            }
-        ), 500
+        return exc.handle_error(e)
 
 @app.route("/auth/update", methods=["POST"])
 @cross_origin()
@@ -270,28 +230,10 @@ def auth_update():
     
         Endpoint: POST /auth/update
 
-        Request Body:
-        {
-            "birthday": "%d/%m/%Y",
-            "first_name": "",
-            "last_name": "",
-            "gender": "",
-            "phone_numbers": [],
-            "email_addressses": [{"email_address":"","id":""}],
-            "primary_email_address_id": "",
-            "profile_image_url": "",
-            "updated_at": 1654012824306,
-            "image_url": ""
-        }
-
-        Response (201 Created)
+        Response (200 OK)
     """
     try:
         db = client.authentication
-
-        # Try to get the request body and make sure it is valid
-        data = request.form
-        print(f"{request.remote_addr}: Request body received, {data}")
         
         # Get the user id from the authentication decorator
         user_id = g.user_id
@@ -300,8 +242,12 @@ def auth_update():
         existing_user = db.users.find_one({"_id": ObjectId(user_id)})
         if existing_user is None:
             print(f"    {request.remote_addr}: User ID does not exist, {user_id}")
-            raise exc.BadRequest(f"User ID does not exist, {user_id}")
+            raise exc.BadRequest(f"User ID does not exist, {user_id}")\
 
+        # Try to get the request body and make sure it is valid
+        data = request.json.get("data")
+        print(f"{request.remote_addr}: Request body received, {data}")
+            
         phone_number = ""
         try:
             phone_number = data.get("phone_numbers")[0] if len(data.get("phone_numbers")) > 0 else ""
@@ -309,77 +255,57 @@ def auth_update():
             pass
 
         email_address = ""
-        for email in data.get("email_addressses"):
+        print 
+        for email in data.get("email_addresses"):
             if email["id"] == data.get("primary_email_address_id"):
                 email_address = email["email_address"]
+        
+        # Check if the user email is already registered
+        existing_user = db.users.find_one({"email": email_address})
+        if existing_user is not None:
+            print(f"    {request.remote_addr}: Email is already registered, {email_address}")
+            raise exc.BadRequest(f"Email is already registered, {email_address}")
+        
+        birthday = None
+        try:
+            birthday = datetime.datetime.strptime(data.get("birthday"), "%d/%m/%Y").date() if data.get("birthday") != "" else ""
+        except Exception as e:
+            pass
 
-        # Attempt to update the users details in the database
+        timestamp_milliseconds = data.get("updated_at")
+        timestamp_seconds = timestamp_milliseconds / 1000
+
+        dt_object = datetime.datetime.fromtimestamp(timestamp_seconds)
+
+        # Attempt to create the user in the database
         user_id = db.users.update_one(
-            {"_id": ObjectId(user_id)},
-            {
-                '$set': {
-                    "firstName": data.get("first_name"),
-                    "lastName": data.get("last_name"),
-                    "birthday": datetime.datetime.strptime(data.get("birthday"), "%d/%m/%Y").date() if data.get("birthday") != "" else "",
-                    "gender": data.get("gender"),
-                    "phoneNumber": phone_number,
-                    "email": email_address,
-                    "profileImage": data.get("profile_image_url"),
-                    "updatedAt": datetime.datetime.fromtimestamp(data.get("updated_at"))
-                }
-            }
+            {"_id": ObjectId(g.user_id)},
+            {"$set":{
+                "firstName": data.get("first_name"),
+                "lastName": data.get("family_name"),
+                "birthday": birthday,
+                "gender": data.get("gender"),
+                "phoneNumber": phone_number,
+                "email": email_address,
+                "profileImage": data.get("profile_image_url"),
+                "updatedAt": dt_object
+            }}
         )
-        print(f"    {request.remote_addr}: user updated, {user_id}")
+        print(f"    {request.remote_addr}: user_id created, {user_id}")
 
         return jsonify({
             "success": True,
-            "message": "Farmer updated successfully"
+            "message": "Farmer updated successfully",
+            "data": {
+                "userId": str(user_id),
+                "email": email_address,
+                "firstName": data.get("first_name"),
+                "lastName": data.get("first_name")
+            }
         }), 200
-    except exc.BadRequest as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "400",
-                    "message": "BAD_REQUEST",
-                    "details": e.message
-                }
-            }
-        ), 400
-    except exc.Unauthorized as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "401",
-                    "message": "UNAUTHORIZED",
-                    "details": e.message
-                }
-            }
-        ), 401
-    except exc.Forbidden as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "403",
-                    "message": "FORBIDDEN",
-                    "details": e.message
-                }
-            }
-        ), 403
     except Exception as e:
         print(e)
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "500",
-                    "message": "INTERNAL_ERROR",
-                    "details": "The server encountered an unexpected condition that prevented it from fulfilling the request."
-                }
-            }
-        ), 500
+        return exc.handle_error(e)
 
 @app.route("/auth/delete", methods=["POST"])
 @cross_origin()
@@ -390,19 +316,10 @@ def auth_delete():
     
         Endpoint: POST /auth/update
 
-        Request Body:
-        {
-            "id": "user_29wBMCtzATuFJut8jO2VNTVekS4"
-        }
-
         Response (201 Created)
     """
     try:
         db = client.authentication
-
-        # Try to get the request body and make sure it is valid
-        data = request.form
-        print(f"{request.remote_addr}: Request body received, {data}")
         
         # Get the user id from the authentication decorator
         user_id = g.user_id
@@ -421,51 +338,9 @@ def auth_delete():
             "success": True,
             "message": "Farmer deleted successfully"
         }), 200
-    except exc.BadRequest as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "400",
-                    "message": "BAD_REQUEST",
-                    "details": e.message
-                }
-            }
-        ), 400
-    except exc.Unauthorized as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "401",
-                    "message": "UNAUTHORIZED",
-                    "details": e.message
-                }
-            }
-        ), 401
-    except exc.Forbidden as e:
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "403",
-                    "message": "FORBIDDEN",
-                    "details": e.message
-                }
-            }
-        ), 403
     except Exception as e:
         print(e)
-        return jsonify(
-            {
-                "success": False,
-                "error": {
-                    "code": "500",
-                    "message": "INTERNAL_ERROR",
-                    "details": "The server encountered an unexpected condition that prevented it from fulfilling the request."
-                }
-            }
-        ), 500
+        return exc.handle_error(e)
 
 @app.route('/auth/profile', methods=["GET"])
 @cross_origin()
@@ -499,258 +374,531 @@ def auth_profile():
         print(e)
         return exc.handle_error(e)
 
-
 """ Farm Endpoints """
 
 @app.route('/farms', methods=["POST", "GET"])
 @cross_origin()
 def farms():
     try:
-        db = client.farm_details
         if request.method == "POST":
-            # TODO: Authenticated
-            request_time = datetime.datetime.now()
-
-            # Make sure the user is authenticated and get the user_id from the entry
-            headers = request.headers
-            user_id = is_signed_in(headers, request.remote_addr)
+            return create_farm()
         elif request.method == "GET":
-            """
-                Get list of all registered farms with optional filtering
-
-                Endpoint: GET /farms
-
-                Query Parameters:
-                    city (optional): Filter by city
-                    state (optional): Filter by state
-                    categories (optional): Filter by produce categories
-                    page (optional): Page number for pagination (default: 1)
-                    limit (optional): Items per page (default: 20)
-
-                Response (200 OK)
-            """
-            data = request.args
-            print(f"{request.remote_addr}: Request body received, {data}")
-
-            filter = {}
-
-            # Set the default page and limit
-            page = 1
-            limit = 20
-
-            # Create the filter, and fill the page and limit if they have been provided
-            for key in list(data.keys()):
-                if key in ["city","state","categories"]:
-                    filter[key] = data.get(key)
-                elif key == "page":
-                    page = int(data.get(key))
-                elif key == "limit":
-                    limit = np.clip(int(data.get(key)),1,100)
-                else:
-                    print(f"    {request.remote_addr}: {key} ignored")
-            
-            # Create the pagination information
-            farm_count = int(db.farms.count_documents(filter))
-            page_count = int(np.ceil(limit/farm_count) if farm_count > 0 else 0)
-            page = int(np.clip(page,1,page_count if page_count > 0 else 1))
-            first_item = int((page-1)*limit+1)
-
-            # TODO: order by distance to current position
-            cursor = db.farms.find(filter,skip=first_item-1,limit=limit)
-            farm_list = [mongo_to_dict(farm, "farmId") for farm in cursor]
-
-            return jsonify({
-                "success": True,
-                "data": {
-                    "farms": farm_list,
-                    "pagination": {
-                        "currentPage": page,
-                        "totalPages": page_count,
-                        "totalItems": farm_count,
-                        "itemsPerPage": limit
-                    }
-                }
-            }), 200
+            return get_farms()
     except Exception as e:
         print(e)
         return exc.handle_error(e)
+
+@clerk_auth_required
+def create_farm():
+    # Get the farm_details database
+    db = client.farm_details
+    
+    # Get the data from the request
+    data = request.json
+
+    # Check if the json data inludes a data key (the request was malformed)
+    if "data" in data.keys():
+        print("Request was malformed but we recovered")
+        data = data.get("data")
+    
+    print(f"Request data, {data}")
+
+    # Add the additional fields
+    data["ownerId"] = ObjectId(g.user_id)
+    data["createdAt"] = datetime.datetime.now()
+
+    # Add the farm
+    db.produce.insert_one(data)
+
+    # Replace the ownerId with the clerk ID for the frontend
+    data["ownerId"] = g.clerk_id
+
+    # Return the success message
+    return jsonify({
+        "success": True,
+        "message": "Farm registered successfully",
+        "data": data
+    }), 201
+
+def get_farms():
+    """
+        Get list of all registered farms with optional filtering
+
+        Endpoint: GET /farms
+
+        Query Parameters:
+            city (optional): Filter by city
+            state (optional): Filter by state
+            categories (optional): Filter by produce categories
+            page (optional): Page number for pagination (default: 1)
+            limit (optional): Items per page (default: 20)
+
+        Response (200 OK)
+    """
+    db = client.farm_details
+
+    data = request.args
+    print(f"{request.remote_addr}: Request args received, {data}")
+
+    filter = {}
+
+    # Set the default page and limit
+    page = 1
+    limit = 20
+
+    # Create the filter, and fill the page and limit if they have been provided
+    for key in list(data.keys()):
+        if key in ["city","state","categories"]:
+            filter[key] = data.get(key)
+        elif key == "page":
+            page = int(data.get(key))
+        elif key == "limit":
+            limit = np.clip(int(data.get(key)),1,100)
+        else:
+            print(f"    {request.remote_addr}: {key} ignored")
+    
+    # Create the pagination information
+    farm_count = int(db.farms.count_documents(filter))
+    page_count = int(np.ceil(limit/farm_count) if farm_count > 0 else 0)
+    page = int(np.clip(page,1,page_count if page_count > 0 else 1))
+    first_item = int((page-1)*limit+1)
+
+    # TODO: order by distance to current position
+    cursor = db.farms.find(filter,skip=first_item-1,limit=limit)
+    farm_list = [mongo_to_dict(farm, "farmId") for farm in cursor]
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "farms": farm_list,
+            "pagination": {
+                "currentPage": page,
+                "totalPages": page_count,
+                "totalItems": farm_count,
+                "itemsPerPage": limit
+            }
+        }
+    }), 200
 
 @app.route('/farms/<farmId>', methods=["PUT", "DELETE", "GET"])
 @cross_origin()
 def farm(farmId : str):
     try:
-        db = client.farm_details
         if request.method == "PUT":
-            # TODO: Authenticated
-            pass
+            return update_farm(farmId)
         elif request.method == "DELETE":
-            # TODO: Authenticated
-            pass
+            return delete_farm(farmId)
         elif request.method == "GET":
-            """
-                Get detailed information about a specific farm
-
-                Endpoint: GET /farms/:farmId
-
-                Response (200 OK)
-            """
-            farm = db.farms.find_one({
-                "_id": farmId
-            })
-
-            if farm is None:
-                raise exc.BadRequest(f"No farm with ID {farmId} found!")
-
-            return jsonify({
-                "success": True,
-                "data": mongo_to_dict(farm, "farmId") # TODO: add exclusion list
-            }), 200
+            return get_farm(farmId)
     except Exception as e:
         print(e)
         return exc.handle_error(e)
+
+@clerk_auth_required
+def update_farm(farmId : str):
+    # Get the farm_details database
+    db = client.farm_details
+
+    # Find the farm
+    farm = db.farms.find_one({"_id": ObjectId(farmId)})
+
+    # If no farm was found return an error
+    if farm is None:
+        raise exc.BadRequest(f"Farm not found, {farmId}")
+
+    # Check that the authenticated user owns the farm
+    if g.user_id != str(farm["ownerId"]):
+        raise exc.Unauthorized(f"User does not own farm, {g.user_id}")
+    
+    # Get the data from the request
+    data = request.json
+
+    # Check if the json data inludes a data key (the request was malformed)
+    if "data" in data.keys():
+        print("Request was malformed but we recovered")
+        data = data.get("data")
+    
+    print(f"Request data, {data}")
+    
+    # Create the set data dictionary
+    set_data = {}
+
+    modified_keys = data.keys()
+    for modified_key in modified_keys:
+        set_data[modified_key] = data.get(modified_key)
+
+    set_data["modifiedAt"] = datetime.datetime.now()
+
+    # Update the farm item
+    db.farms.update_one(
+        {"_id": ObjectId(farmId)},
+        {'$set': set_data}
+    )
+
+    farm = db.farms.find_one({"_id": ObjectId(farmId)})
+
+    # Return the success message
+    return jsonify({
+        "success": True,
+        "message": "Produce updated successfully",
+        "data": mongo_to_dict(farm, "farmId")
+    }), 201
+
+@clerk_auth_required
+def delete_farm(farmId : str):
+    """
+        Delete a specified farm
+
+        Endpoint: DELETE /farms/:farmId
+
+        Response (200 OK)
+    """
+    # Get the farm_details database
+    db = client.farm_details
+
+    # Find the farm
+    farm = db.farms.find_one({"_id": ObjectId(farmId)})
+
+    # If no farm was found return an error
+    if farm is None:
+        raise exc.BadRequest(f"Farm not found, {farmId}")
+
+    # Check that the authenticated user owns the farm
+    if g.user_id != str(farm["ownerId"]):
+        raise exc.Unauthorized(f"User does not own farm, {g.user_id}")
+    
+    # Delete the farm
+    db.farms.delete_one({"_id": ObjectId(farmId)})
+
+    # Return the success message
+    return jsonify({
+        "success": True,
+        "message": "Farm deleted successfully"
+    }), 200
+
+def get_farm(farmId : str):
+    """
+        Get detailed information about a specific farm
+
+        Endpoint: GET /farms/:farmId
+
+        Response (200 OK)
+    """
+    # Get the farm_details database
+    db = client.farm_details
+
+    # Find the farm
+    farm = db.farms.find_one({"_id": ObjectId(farmId)})
+
+    # If no farm was found return an error
+    if farm is None:
+        raise exc.BadRequest(f"Farm not found, {farmId}")
+
+    return jsonify({
+        "success": True,
+        "data": mongo_to_dict(farm, "farmId") # TODO: add exclusion list
+    }), 200
 
 @app.route('/farms/<farmId>/produce', methods=["POST", "GET"])
 @cross_origin()
 def farm_produce(farmId : str):
     try:
-        db = client.farm_details
         if request.method == "POST":
-            # TODO: Authenticated
-            pass
+            add_farm_produce(farmId)
         elif request.method == "GET":
-            """
-                Get all produce items for a specific farm
-
-                Endpoint: GET /farms/:farmId/produce
-
-                Response (200 OK)
-            """
-            data = request.args
-            print(f"{request.remote_addr}: Request body received, {data}")
-
-            filter = {"farmId":farmId}
-
-            # Get the farm details
-            farm = db.farms.find_one({"_id":farmId})
-
-            if farm is None:
-                print(f"    {request.remote_addr}: Farm does not exist, {farmId}")
-                raise exc.BadRequest(f"Farm does not exist, {farmId}")
-
-            # Set the default page and limit
-            page = 1
-            limit = 20
-
-            # Create the filter, and fill the page and limit if they have been provided
-            for key in list(data.keys()):
-                if key == "page":
-                    page = int(data.get(key))
-                elif key == "limit":
-                    limit = np.clip(int(data.get(key)),1,100)
-                else:
-                    print(f"    {request.remote_addr}: {key} ignored")
-            
-            # Create the pagination information
-            produce_count = int(db.produce.count_documents(filter))
-            page_count = int(np.ceil(limit/produce_count) if produce_count > 0 else 0)
-            page = int(np.clip(page,1,page_count if page_count > 0 else 1))
-            first_item = int((page-1)*limit+1)
-
-            # TODO: order by distance to current position
-            cursor = db.produce.find(filter,skip=first_item-1,limit=limit)
-            produce_list = [mongo_to_dict(produce, "produceId") for produce in cursor]
-
-            return jsonify({
-                "success": True,
-                "data": {
-                    "farmId": farmId,
-                    "farmName": farm["farmName"],
-                    "produce": produce_list,
-                    "pagination": {
-                        "currentPage": page,
-                        "totalPages": page_count,
-                        "totalItems": produce_count,
-                        "itemsPerPage": limit
-                    }
-                }
-            }), 200
+            get_farm_produce(farmId)
     except Exception as e:
         print(e)
         return exc.handle_error(e)
+
+def get_farm_produce(farmId : str):
+    """
+        Get all produce items for a specific farm
+
+        Endpoint: GET /farms/:farmId/produce
+
+        Response (200 OK)
+    """
+    db = client.farm_details
+    
+    data = request.args
+    print(f"{request.remote_addr}: Request args received, {data}")
+
+    # Create the farm filter
+    filter = {"farmId":farmId}
+
+    # Get the farm details
+    farm = db.farms.find_one({"_id":farmId})
+    if farm is None:
+        print(f"    {request.remote_addr}: Farm does not exist, {farmId}")
+        raise exc.BadRequest(f"Farm does not exist, {farmId}")
+
+    # Set the default page and limit
+    page = 1
+    limit = 20
+
+    # Create the filter, and fill the page and limit if they have been provided
+    for key in list(data.keys()):
+        if key == "page":
+            page = int(data.get(key))
+        elif key == "limit":
+            limit = np.clip(int(data.get(key)),1,100)
+        else:
+            print(f"    {request.remote_addr}: {key} ignored")
+    
+    # Create the pagination information
+    produce_count = int(db.produce.count_documents(filter))
+    page_count = int(np.ceil(limit/produce_count) if produce_count > 0 else 0)
+    page = int(np.clip(page,1,page_count if page_count > 0 else 1))
+    first_item = int((page-1)*limit+1)
+
+    # TODO: order by distance to current position
+    cursor = db.produce.find(filter,skip=first_item-1,limit=limit)
+    produce_list = [mongo_to_dict(produce, "produceId") for produce in cursor]
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "farmId": farmId,
+            "farmName": farm["farmName"],
+            "produce": produce_list,
+            "pagination": {
+                "currentPage": page,
+                "totalPages": page_count,
+                "totalItems": produce_count,
+                "itemsPerPage": limit
+            }
+        }
+    }), 200
+
+""" Produce Endpoints """
+
+@clerk_auth_required
+def add_farm_produce(farmId : str):
+    # Get the farm_details database
+    db = client.farm_details
+
+    # Find the farm
+    farm = db.farms.find_one({"_id": ObjectId(farmId)})
+
+    # If no farm was found return an error
+    if farm is None:
+        raise exc.BadRequest(f"Farm not found, {farmId}")
+
+    # Check that the authenticated user owns the farm
+    if g.user_id != str(farm["ownerId"]):
+        raise exc.Unauthorized(f"User does not own farm, {g.user_id}")
+    
+    # Get the data from the request
+    data = request.json
+
+    # Check if the json data inludes a data key (the request was malformed)
+    if "data" in data.keys():
+        print("Request was malformed but we recovered")
+        data = data.get("data")
+
+    # Add the farm id and created timestamp
+    data["farmId"] = ObjectId(farmId)
+    data["createdAt"] = datetime.datetime.now()
+    data["modifiedAt"] = datetime.datetime.now()
+
+    # Add the produce item
+    db.produce.insert_one(data)
+
+    # Return the success message
+    return jsonify({
+        "success": True,
+        "message": "Produce added successfully",
+        "data": data
+    }), 201
 
 @app.route("/produce/<produceId>", methods=["PUT", "DELETE", "GET"])
 @cross_origin()
 def id_produce(produceId : str):
     try:
-        db = client.farm_details
         if request.method == "PUT":
-            # TODO: Authenticated
-            pass
+            return update_produce_id(produceId)
         elif request.method == "DELETE":
-            # TODO: Authenticated
-            pass
+            return delete_produce_id(produceId)
         elif request.method == "GET":
-            """ 
-                Get detailed information about specific produce 
-
-                Endpoint: GET /produce/:produceId
-
-                Response (200 OK)
-            """
-            
-            data = request.args
-            print(f"{request.remote_addr}: Request body received, {data}")
-
-            # Get the produce document associated with this id
-            produce = db.produce.find_one({"_id": produceId})
-            # If no produce document was found return an error
-            if produce is None:
-                print(f"    {request.remote_addr}: Produce with this id does not exist, {produceId}")
-                raise exc.BadRequest(f"Produce with this id does not exist, {produceId}")
-            
-            # Get the farm document associated with this produce
-            farm = db.farms.find_one({"_id": produce["farmId"]})
-            # If no farm was found with the produce document's farm id return an error
-            if farm is None:
-                print(f"    {request.remote_addr}: Farm with this id does not exist, {produce["farmId"]}")
-                raise exc.BadRequest(f"Produce with this id does not exist, {produce["farmId"]}")
-            
-            # Convert the produce document to a json compatible dict
-            produce_dict = mongo_to_dict(produce, "produceId")
-
-            # Convert the farm document to a json compatible dict
-            farm_dict = mongo_to_dict(farm, "farmId")
-            
-            # Add the farm dict to the produce dict
-            produce_dict["farm"] = farm_dict
-
-            # Return the details requested
-            return jsonify({
-                "success": True,
-                "data": produce_dict
-            })
+            return get_produce_id(produceId)
     except Exception as e:
         print(e)
         return exc.handle_error(e)
 
-@app.route('/produce', methods=["GET"])
-def produce():
-    try:
-        # TODO: Not Authenticated
-        pass
-    except Exception as e:
-        print(e)
-        return exc.handle_error(e)
+def get_produce_id(produceId: str):
+    """ 
+        Get detailed information about specific produce 
+
+        Endpoint: GET /produce/:produceId
+
+        Response (200 OK)
+    """
+    db = client.farm_details
+    
+    data = request.args
+    print(f"{request.remote_addr}: Request args received, {data}")
+
+    # Get the produce document associated with this id
+    produce = db.produce.find_one({"_id": produceId})
+    # If no produce document was found return an error
+    if produce is None:
+        print(f"    {request.remote_addr}: Produce with this id does not exist, {produceId}")
+        raise exc.BadRequest(f"Produce with this id does not exist, {produceId}")
+    
+    # Get the farm document associated with this produce
+    farm = db.farms.find_one({"_id": produce["farmId"]})
+    # If no farm was found with the produce document's farm id return an error
+    if farm is None:
+        print(f"    {request.remote_addr}: Farm with this id does not exist, {produce["farmId"]}")
+        raise exc.BadRequest(f"Produce with this id does not exist, {produce["farmId"]}")
+    
+    # Convert the produce document to a json compatible dict
+    produce_dict = mongo_to_dict(produce, "produceId")
+
+    # Convert the farm document to a json compatible dict
+    farm_dict = mongo_to_dict(farm, "farmId")
+    
+    # Add the farm dict to the produce dict
+    produce_dict["farm"] = farm_dict
+
+    # Return the details requested
+    return jsonify({
+        "success": True,
+        "data": produce_dict
+    })
+
+@clerk_auth_required
+def update_produce_id(produceId: str):
+    """ 
+        Update a produce item
+
+        Endpoint: PUT /produce/:produceId
+
+        Response (200 OK)
+    """
+    # Get the farm_details database
+    db = client.farm_details
+
+    # Find the produce document
+    produce = db.produce.find_one({"_id": ObjectId(produceId)})
+
+    # If no produce document was found return an error
+    if produce is None:
+        raise exc.BadRequest(f"Produce not found, {produceId}")
+
+    # Get the associated farm id
+    farmId = str(produce["farmId"])
+
+    # Find the associated farm
+    farm = db.farms.find_one({"_id": ObjectId(farmId)})
+
+    # If no farm was found return an error
+    if farm is None:
+        raise exc.BadRequest(f"Associated farm not found, {farmId}")
+
+    # Check that the authenticated user owns the farm
+    if g.user_id != str(farm["ownerId"]):
+        raise exc.Unauthorized(f"User does not own associated farm, {g.user_id}")
+    
+    # Get the data from the request
+    data = request.json
+
+    # Check if the json data inludes a data key (the request was malformed)
+    if "data" in data.keys():
+        print("Request was malformed but we recovered")
+        data = data.get("data")
+    
+    # Create the set data dictionary
+    set_data = {}
+
+    modified_keys = data.keys()
+    for modified_key in modified_keys:
+        set_data[modified_key] = data.get(modified_key)
+
+    set_data["modifiedAt"] = datetime.datetime.now()
+
+    # Update the produce item
+    db.produce.update_one(
+        {"_id": ObjectId(produceId)},
+        {'$set': set_data}
+    )
+
+    produce = db.produce.find_one({"_id": ObjectId(produceId)})
+
+    # Return the success message
+    return jsonify({
+        "success": True,
+        "message": "Produce updated successfully",
+        "data": mongo_to_dict(produce, "produceId")
+    }), 201
+
+@clerk_auth_required
+def delete_produce_id(produceId: str):
+    """ 
+        Delete a produce item
+
+        Endpoint: DELETE /produce/:produceId
+
+        Response (200 OK)
+    """
+    # Get the farm_details database
+    db = client.farm_details
+
+    # Find the produce document
+    produce = db.produce.find_one({"_id": ObjectId(produceId)})
+
+    # If no produce document was found return an error
+    if produce is None:
+        raise exc.BadRequest(f"Produce not found, {produceId}")
+
+    # Get the associated farm id
+    farmId = str(produce["farmId"])
+
+    # Find the associated farm
+    farm = db.farms.find_one({"_id": ObjectId(farmId)})
+
+    # If no farm was found return an error
+    if farm is None:
+        raise exc.BadRequest(f"Associated farm not found, {farmId}")
+
+    # Check that the authenticated user owns the farm
+    if g.user_id != str(farm["ownerId"]):
+        raise exc.Unauthorized(f"User does not own associated farm, {g.user_id}")
+
+    # Delete the produce document
+    db.produce.delete_one({"_id": ObjectId(produceId)})
+    
+    return jsonify({
+        "success": True,
+        "message": "Produce deleted successfully"
+    })
 
 @app.route('/categories', methods=["GET"])
 def categories():
     try:
-        # TODO: Not Authenticated
-        pass
+        """
+            Get list of available produce categories
+
+            Endpoint: GET /categories
+
+            Response (200 OK)
+        """
+        print(f"{request.remote_addr}: Request received")
+
+        db = client.farm_details
+
+        categories = db.produce_categories.find()
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "categories": [category["value"] for category in categories]
+            }
+        }), 200
     except Exception as e:
         print(e)
         return exc.handle_error(e)
-
 
 """ Run Flask App """
 
