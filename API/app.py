@@ -88,7 +88,7 @@ def clerk_auth_required(f):
             
             g.clerk_id = claims_state.payload.get("sub")
 
-            user = db.user.find_one({"clerk_id": g.clerk_id})
+            user = db.users.find_one({"clerk_id": g.clerk_id})
             
             # Access the user ID via the .payload attribute.
             g.user_id = str(user["_id"])
@@ -176,7 +176,6 @@ def auth_register():
             pass
 
         email_address = ""
-        print 
         for email in data.get("email_addresses"):
             if email["id"] == data.get("primary_email_address_id"):
                 email_address = email["email_address"]
@@ -201,13 +200,15 @@ def auth_register():
         # Attempt to create the user in the database
         user_id = db.users.insert_one({
             "firstName": data.get("first_name"),
-            "lastName": data.get("family_name"),
+            "lastName": data.get("last_name"),
             "birthday": birthday,
             "gender": data.get("gender"),
             "phoneNumber": phone_number,
             "email": email_address,
             "profileImage": data.get("profile_image_url"),
-            "updatedAt": dt_object
+            "clerkId": data.get("id"),
+            "createdAt": dt_object,
+            "modifiedAt": dt_object
         }).inserted_id
         print(f"    {request.remote_addr}: user_id created, {user_id}")
 
@@ -216,9 +217,10 @@ def auth_register():
             "message": "Farmer registered successfully",
             "data": {
                 "userId": str(user_id),
+                "clerkId": data.get("id"),
                 "email": email_address,
                 "firstName": data.get("first_name"),
-                "lastName": data.get("first_name")
+                "lastName": data.get("last_name")
             }
         }), 201
     except Exception as e:
@@ -246,7 +248,7 @@ def auth_update():
         existing_user = db.users.find_one({"_id": ObjectId(user_id)})
         if existing_user is None:
             print(f"    {request.remote_addr}: User ID does not exist, {user_id}")
-            raise exc.BadRequest(f"User ID does not exist, {user_id}")\
+            raise exc.BadRequest(f"User ID does not exist, {user_id}")
 
         # Try to get the request body and make sure it is valid
         data = request.json.get("data")
@@ -259,7 +261,7 @@ def auth_update():
             pass
 
         email_address = ""
-        print 
+
         for email in data.get("email_addresses"):
             if email["id"] == data.get("primary_email_address_id"):
                 email_address = email["email_address"]
@@ -292,7 +294,7 @@ def auth_update():
                 "phoneNumber": phone_number,
                 "email": email_address,
                 "profileImage": data.get("profile_image_url"),
-                "updatedAt": dt_object
+                "modifiedAt": dt_object
             }}
         )
         print(f"    {request.remote_addr}: user_id created, {user_id}")
@@ -412,7 +414,7 @@ def create_farm():
     data["createdAt"] = datetime.datetime.now()
 
     # Add the farm
-    db.produce.insert_one(data)
+    db.farms.insert_one(data)
 
     # Replace the ownerId with the clerk ID for the frontend
     data["ownerId"] = g.clerk_id
