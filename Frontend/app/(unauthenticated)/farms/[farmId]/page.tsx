@@ -1,20 +1,33 @@
-'use client';
+"use client";
 
-import { notFound } from 'next/navigation';
-import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import Map from '@/components/ui/map';
-import ProductCard from '@/components/ProductCard/ProductCard';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { MapPin, Phone, Mail, Clock } from 'lucide-react';
-import { unauthenticatedApiClient } from '@/lib/api-client';
+import { notFound } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import Map from "@/components/ui/map";
+import ProductCard from "@/components/ProductCard/ProductCard";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { MapPin, Phone, Mail, Clock } from "lucide-react";
+import { unauthenticatedApiClient } from "@/lib/api-client";
 
 interface Farm {
   farmId: string;
@@ -69,12 +82,16 @@ async function getFarmById(farmId: string): Promise<Farm | null> {
   try {
     return await unauthenticatedApiClient.getFarmById(farmId);
   } catch (error) {
-    console.error('Error fetching farm:', error);
+    console.error("Error fetching farm:", error);
     return null;
   }
 }
 
-export default function FarmDetailPage({ params }: { params: Promise<{ farmId: string }> }) {
+export default function FarmDetailPage({
+  params,
+}: {
+  params: Promise<{ farmId: string }>;
+}) {
   const router = useRouter();
   const [farm, setFarm] = useState<Farm | null>(null);
   const [loading, setLoading] = useState(true);
@@ -108,7 +125,7 @@ export default function FarmDetailPage({ params }: { params: Promise<{ farmId: s
         }
         setFarm(farmData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load farm');
+        setError(err instanceof Error ? err.message : "Failed to load farm");
       } finally {
         setLoading(false);
       }
@@ -143,16 +160,17 @@ export default function FarmDetailPage({ params }: { params: Promise<{ farmId: s
     notFound();
   }
 
-
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <p className="text-sm text-gray-600 mb-4">Producer Profile Page</p>
           <h1 className="text-3xl font-bold text-gray-900 mb-4">{farm.name}</h1>
-          <div className="inline-block bg-gray-100 px-3 py-1 rounded text-sm text-gray-700">
-            {farm.address.city} {farm.address.state}
+          <div className="bg-gray-100 px-2 py-1 rounded text-sm text-gray-700 flex items-center gap-2 w-fit">
+            <MapPin className="w-4 h-4 text-gray-500" />
+            <p>
+              {farm.address.street}, {farm.address.city}, {farm.address.state}
+            </p>
           </div>
         </div>
 
@@ -182,47 +200,59 @@ export default function FarmDetailPage({ params }: { params: Promise<{ farmId: s
             {farm.description}
           </p>
           <p className="text-gray-700 leading-relaxed mb-4">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+            eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
+            ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+            aliquip ex ea commodo consequat.
           </p>
           <p className="text-gray-700 leading-relaxed mb-4">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+            eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
+            ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+            aliquip ex ea commodo consequat.
           </p>
           <p className="text-gray-700 leading-relaxed">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+            eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
+            ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+            aliquip ex ea commodo consequat.
           </p>
         </div>
 
         {/* We Produce Section */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">We Produce</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            We Produce
+          </h2>
           {farm.produce && farm.produce.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {farm.produce.map((produce) => {
-              const primaryCategory = produce.category[0] || 'other';
-              const categoryIcon = {
-                'honey': '🍯',
-                'vegetables': '🥕',
-                'fruits': '🍎',
-                'coffeeAndTea': '☕',
-                'nutsSeeds': '🥜',
-                'eggsAndMilk': '🥛',
-                'herbs': '🌿',
-                'herbsAndSpices': '🌿',
-                'grain': '🌾',
-                'legumes': '🫘',
-                'livestock': '🐄',
-                'seafood': '🐟',
-                'forestry': '🌲',
-                'other': '🌱'
-              }[primaryCategory] || '🌱';
+                const primaryCategory = produce.category[0] || "other";
+                const categoryIcon =
+                  {
+                    honey: "🍯",
+                    vegetables: "🥕",
+                    fruits: "🍎",
+                    coffeeAndTea: "☕",
+                    nutsSeeds: "🥜",
+                    eggsAndMilk: "🥛",
+                    herbs: "🌿",
+                    herbsAndSpices: "🌿",
+                    grain: "🌾",
+                    legumes: "🫘",
+                    livestock: "🐄",
+                    seafood: "🐟",
+                    forestry: "🌲",
+                    other: "🌱",
+                  }[primaryCategory] || "🌱";
 
-              return (
-                <ProductCard 
-                  key={produce.id} 
-                  produce={produce} 
-                  categoryIcon={categoryIcon}
-                />
-              );
+                return (
+                  <ProductCard
+                    key={produce.id}
+                    produce={produce}
+                    categoryIcon={categoryIcon}
+                  />
+                );
               })}
             </div>
           ) : (
@@ -234,8 +264,10 @@ export default function FarmDetailPage({ params }: { params: Promise<{ farmId: s
 
         {/* Get in Touch Section */}
         <div className="mb-12">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Get in Touch</h2>
-          
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">
+            Get in Touch
+          </h2>
+
           {/* Contact Info and Map Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             {/* Contact Info Card */}
@@ -263,7 +295,7 @@ export default function FarmDetailPage({ params }: { params: Promise<{ farmId: s
                 </div>
               </div>
             </div>
-            
+
             {/* Map Card */}
             <div className="border border-gray-200 rounded-lg p-6">
               <div className="text-center mb-4">
@@ -276,86 +308,101 @@ export default function FarmDetailPage({ params }: { params: Promise<{ farmId: s
           </div>
 
           {/* Divider */}
-          <hr className="border-gray-300 mb-8" />
+          <hr className="border-gray-300 my-20 mb-12" />
 
           {/* Contact Form */}
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md mx-auto mb-20">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
                 <FormField
                   control={form.control}
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-900">Name</FormLabel>
+                      <FormLabel className="text-sm font-medium text-gray-900">
+                        Name
+                      </FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Enter your name" 
+                        <Input
+                          placeholder="Enter your name"
                           className="border-gray-300 focus:border-gray-500 focus:ring-gray-500"
-                          {...field} 
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-900">Email Address</FormLabel>
+                      <FormLabel className="text-sm font-medium text-gray-900">
+                        Email Address
+                      </FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Enter your email address" 
-                          type="email" 
+                        <Input
+                          placeholder="Enter your email address"
+                          type="email"
                           className="border-gray-300 focus:border-gray-500 focus:ring-gray-500"
-                          {...field} 
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="company"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-900">Company <span className="text-gray-400">(optional)</span></FormLabel>
+                      <FormLabel className="text-sm font-medium text-gray-900">
+                        Company{" "}
+                        <span className="text-gray-400">(optional)</span>
+                      </FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Enter your company name" 
+                        <Input
+                          placeholder="Enter your company name"
                           className="border-gray-300 focus:border-gray-500 focus:ring-gray-500"
-                          {...field} 
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="message"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-900">Message</FormLabel>
+                      <FormLabel className="text-sm font-medium text-gray-900">
+                        Message
+                      </FormLabel>
                       <FormControl>
-                        <Textarea 
-                          placeholder="Enter your message here..." 
+                        <Textarea
+                          placeholder="Enter your message here..."
                           className="min-h-32 border-gray-300 focus:border-gray-500 focus:ring-gray-500 resize-none"
-                          {...field} 
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
-                <Button type="submit" className="w-full bg-black text-white hover:bg-gray-800 h-12 text-base font-medium">
+
+                <Button
+                  type="submit"
+                  className="w-full bg-black text-white hover:bg-gray-800 h-12 text-base font-medium"
+                >
                   Submit
                 </Button>
               </form>

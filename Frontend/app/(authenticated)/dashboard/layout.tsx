@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import DashboardNavbar from "@/components/layout/DashboardNavbar";
 
 export const metadata: Metadata = {
   title: "Farmer Dashboard - Buying Good",
@@ -18,5 +19,10 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <div className="min-h-screen bg-white">
+      <DashboardNavbar />
+      {children}
+    </div>
+  );
 }

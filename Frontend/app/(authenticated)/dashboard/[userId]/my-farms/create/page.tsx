@@ -9,13 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Save } from "lucide-react";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 
 interface CreateFarmData {
   name: string;
@@ -156,7 +149,7 @@ export default function CreateFarm({ params }: { params: Promise<{ userId: strin
 
   if (!isLoaded || !resolvedParams) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
@@ -166,43 +159,22 @@ export default function CreateFarm({ params }: { params: Promise<{ userId: strin
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Breadcrumb className="mb-4">
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/">Home</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink href={`/dashboard/${resolvedParams.userId}/my-farms`}>My Farms</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink href={`/dashboard/${resolvedParams.userId}/my-farms/create`}>Create Farm</BreadcrumbLink>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-          
+    <div>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mb-6">
+          <Button
+            onClick={() => router.push(`/dashboard/${resolvedParams.userId}/my-farms`)}
+            variant="outline"
+            size="sm"
+            className="mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Farms
+          </Button>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                onClick={() => router.push(`/dashboard/${resolvedParams.userId}/my-farms`)}
-                variant="outline"
-                size="sm"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Farms
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Create New Farm</h1>
-                <p className="text-gray-600">Add your farm to the registry</p>
-              </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Create New Farm</h1>
+              <p className="text-gray-600">Add your farm to the registry</p>
             </div>
             <Button
               onClick={handleSave}

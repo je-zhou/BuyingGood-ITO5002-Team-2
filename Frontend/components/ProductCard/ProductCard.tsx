@@ -1,9 +1,14 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Carousel, CarouselContent, CarouselItem, CarouselApi } from '@/components/ui/carousel';
-import { Calendar, DollarSign, Package } from 'lucide-react';
-import { EmblaOptionsType } from 'embla-carousel';
+import React, { useState, useEffect } from "react";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselApi,
+} from "@/components/ui/carousel";
+import { Calendar, DollarSign, Package } from "lucide-react";
+import { EmblaOptionsType } from "embla-carousel";
 
 interface Produce {
   id: string;
@@ -27,7 +32,20 @@ interface ProductCardProps {
   categoryIcon: string;
 }
 
-const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthNames = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 const ProductCard: React.FC<ProductCardProps> = ({ produce, categoryIcon }) => {
   const [isHovering, setIsHovering] = useState(false);
@@ -37,28 +55,34 @@ const ProductCard: React.FC<ProductCardProps> = ({ produce, categoryIcon }) => {
   useEffect(() => {
     if (!api) return;
 
-    api.on('select', () => {
+    api.on("select", () => {
       setCurrentSlide(api.selectedScrollSnap());
     });
   }, [api]);
 
   const formatAvailability = () => {
-    if (produce.availabilityWindows.length === 0) return 'Not available';
-    
-    return produce.availabilityWindows.map(window => {
-      if (window.startMonth === window.endMonth) {
-        return `${monthNames[window.startMonth]}`;
-      } else if (window.startMonth <= window.endMonth) {
-        return `${monthNames[window.startMonth]} - ${monthNames[window.endMonth]}`;
-      } else {
-        return `${monthNames[window.startMonth]} - ${monthNames[window.endMonth]} (cross-year)`;
-      }
-    }).join(', ');
+    if (produce.availabilityWindows.length === 0) return "Not available";
+
+    return produce.availabilityWindows
+      .map((window) => {
+        if (window.startMonth === window.endMonth) {
+          return `${monthNames[window.startMonth]}`;
+        } else if (window.startMonth <= window.endMonth) {
+          return `${monthNames[window.startMonth]} - ${
+            monthNames[window.endMonth]
+          }`;
+        } else {
+          return `${monthNames[window.startMonth]} - ${
+            monthNames[window.endMonth]
+          } (cross-year)`;
+        }
+      })
+      .join(", ");
   };
 
   const carouselOptions: EmblaOptionsType = {
     loop: true,
-    align: 'start'
+    align: "start",
   };
 
   const goToSlide = (index: number) => {
@@ -69,9 +93,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ produce, categoryIcon }) => {
 
   const slides = [
     {
-      id: 'image',
+      id: "image",
       content: (
-        <div 
+        <div
           className="aspect-square bg-gray-100 relative overflow-hidden cursor-pointer"
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
@@ -79,19 +103,25 @@ const ProductCard: React.FC<ProductCardProps> = ({ produce, categoryIcon }) => {
           <div className="w-full h-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
             <span className="text-gray-500 text-sm">Product Image</span>
           </div>
-          
+
           {/* Semi-transparent overlay with product name and icon */}
-          <div className={`absolute inset-0 bg-black transition-opacity duration-300 flex flex-col items-center justify-center text-white p-4 ${
-            isHovering ? 'bg-opacity-0 opacity-0' : 'bg-opacity-20 opacity-100'
-          }`}>
+          <div
+            className={`absolute inset-0 bg-black/20 transition-opacity duration-300 flex flex-col items-center justify-center text-white p-4 ${
+              isHovering
+                ? "bg-opacity-0 opacity-0"
+                : "bg-opacity-20 opacity-100"
+            }`}
+          >
             <div className="text-3xl mb-2">{categoryIcon}</div>
-            <h3 className="text-lg font-semibold text-center">{produce.name}</h3>
+            <h3 className="text-lg font-semibold text-center">
+              {produce.name}
+            </h3>
           </div>
         </div>
-      )
+      ),
     },
     {
-      id: 'availability',
+      id: "availability",
       content: (
         <div className="aspect-square bg-gray-50 p-4 flex flex-col justify-center">
           <div className="text-center">
@@ -102,10 +132,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ produce, categoryIcon }) => {
             </p>
           </div>
         </div>
-      )
+      ),
     },
     {
-      id: 'pricing',
+      id: "pricing",
       content: (
         <div className="aspect-square bg-gray-50 p-4 flex flex-col justify-center">
           <div className="text-center">
@@ -117,10 +147,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ produce, categoryIcon }) => {
             <p className="text-xs text-gray-500">per {produce.unit}</p>
           </div>
         </div>
-      )
+      ),
     },
     {
-      id: 'order',
+      id: "order",
       content: (
         <div className="aspect-square bg-gray-50 p-4 flex flex-col justify-center">
           <div className="text-center">
@@ -132,32 +162,26 @@ const ProductCard: React.FC<ProductCardProps> = ({ produce, categoryIcon }) => {
             <p className="text-xs text-gray-500">minimum order</p>
           </div>
         </div>
-      )
-    }
+      ),
+    },
   ];
 
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm relative">
-      <Carousel 
-        opts={carouselOptions}
-        className="w-full"
-        setApi={setApi}
-      >
+      <Carousel opts={carouselOptions} className="w-full" setApi={setApi}>
         <CarouselContent>
           {slides.map((slide) => (
-            <CarouselItem key={slide.id}>
-              {slide.content}
-            </CarouselItem>
+            <CarouselItem key={slide.id}>{slide.content}</CarouselItem>
           ))}
         </CarouselContent>
-        
+
         {/* Carousel indicators inside the card */}
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
           {slides.map((_, index) => (
             <button
               key={index}
               className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-                currentSlide === index ? 'bg-white' : 'bg-white/50'
+                currentSlide === index ? "bg-white" : "bg-white/50"
               }`}
               onClick={() => goToSlide(index)}
               aria-label={`Go to slide ${index + 1}`}

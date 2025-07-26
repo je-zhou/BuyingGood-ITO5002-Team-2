@@ -5,13 +5,6 @@ import { useUser } from "@clerk/nextjs";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useApiClient } from "@/lib/api-client";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 
 interface Farm {
   farmId: string;
@@ -38,33 +31,14 @@ export default function FarmsPage({ params }: { params: Promise<{ userId: string
   }, [params]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/">Home</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink href={`/dashboard/${resolvedParams?.userId}/my-farms`}>My Farms</BreadcrumbLink>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-
-        {/* Title */}
-        <h1 className="font-semibold text-3xl pb-8 pt-4">Farms</h1>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Title */}
+      <h1 className="font-semibold text-3xl pb-8">Farms</h1>
 
         {/* Wrap the content that needs to load with Suspense */}
         <Suspense fallback={<FarmsSkeletonLoader userId={resolvedParams?.userId} />}>
           <FarmsContent userId={resolvedParams?.userId} />
         </Suspense>
-      </div>
     </div>
   );
 }
