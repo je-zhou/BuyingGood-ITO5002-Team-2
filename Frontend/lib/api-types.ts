@@ -1,5 +1,4 @@
-// TypeScript interfaces for BuyingGood API responses
-// Generated based on actual backend implementation analysis
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Base API response structure
 export interface ApiResponse<T = any> {
