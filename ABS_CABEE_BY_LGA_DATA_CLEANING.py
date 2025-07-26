@@ -54,10 +54,10 @@ for df in (df_1,df_2,df_3):
     df_clean = df_clean.rename(columns={'total_max': 'total_business_count'})
         
     # Add to combined df
-    df_comb = df_comb.append(df_clean, ignore_index=True)
+    df_comb = pd.concat([df_comb, df_clean], ignore_index=True)
     
 # Export cleaned data to csv
-df_clean.to_csv('ABS_CABEE_BY_LGA_CLEAN.csv', index = False)
+df_comb.to_csv('ABS_CABEE_BY_LGA_CLEAN.csv', index = False)
 
 ## INSERT TO MONGODB
 
@@ -77,4 +77,4 @@ collection = db['business_count']
 delete = collection.delete_many({})
 
 # Insert updated documents to collection
-collection.insert_many(df_clean.to_dict('records'))
+collection.insert_many(df_comb.to_dict('records'))
