@@ -1,4 +1,4 @@
-import jsonify
+from flask import jsonify
 
 class BadRequest(Exception):
     def __init__(self, message):
