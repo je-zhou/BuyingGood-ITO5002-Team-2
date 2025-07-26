@@ -4,6 +4,7 @@ import OurStory from "./OurStory";
 import OurSolution from "./OurSolution";
 import WhatsInItForYou from "./WhatsInItForYou";
 import Testimonials from "./Testimonials";
+import DataViz from "./DataViz";
 
 export default function Landing() {
   return (
@@ -14,6 +15,10 @@ export default function Landing() {
       <div className="flex flex-col gap-72 pb-40">
         <div id="our-story">
           <OurStory />
+        </div>
+
+        <div id="data-viz">
+          <DataViz />
         </div>
         <div id="our-solution">
           <OurSolution />
