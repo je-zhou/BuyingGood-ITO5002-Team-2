@@ -54,6 +54,7 @@ export interface Farm {
   contact_email?: string;
   contact_phone?: string;
   opening_hours?: string;
+  images?: string[];
   ownerId: string; // ObjectId converted to string
   createdAt: number; // Unix timestamp
   modifiedAt?: number; // Unix timestamp

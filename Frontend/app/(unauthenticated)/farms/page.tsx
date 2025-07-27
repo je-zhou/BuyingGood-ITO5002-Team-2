@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { unauthenticatedApiClient } from "@/lib/api-client";
 import { Farm, Produce } from "@/lib/api-types";
+import Image from "next/image";
 
 interface SearchResponse {
   success: boolean;
@@ -383,11 +384,50 @@ function FarmsPageContent() {
             {farms.map((farm) => (
               <div
                 key={farm.farmId}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6"
+                className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 group"
               >
                 <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-                  {/* Farm Image Placeholder */}
-                  <div className="w-full md:w-32 h-32 bg-gray-100 rounded-lg flex-shrink-0"></div>
+                  {/* Farm Image */}
+                  <div className="w-full md:w-32 h-32 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden relative">
+                    {farm.images && farm.images.length > 0 ? (
+                      <>
+                        {/* First Image */}
+                        <Image
+                          src={farm.images[0]}
+                          alt={`${farm.name} farm`}
+                          width={128}
+                          height={128}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = "none";
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-100 text-gray-500 text-sm">No Image</div>';
+                            }
+                          }}
+                        />
+                        {/* Second Image (hover overlay) */}
+                        {farm.images.length > 1 && (
+                          <Image
+                            src={farm.images[1]}
+                            alt={`${farm.name} farm (alternate view)`}
+                            width={128}
+                            height={128}
+                            className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-in-out"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = "none";
+                            }}
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-500 text-sm">
+                        No Image
+                      </div>
+                    )}
+                  </div>
 
                   <div className="flex-grow flex flex-col md:flex-row gap-4">
                     {/* Farm Info */}
