@@ -704,10 +704,10 @@ def get_farm_produce(farmId : str):
     print(f"{request.remote_addr}: Request args received, {data}")
 
     # Create the farm filter
-    filter = {"farmId":farmId}
+    filter = {"farmId":ObjectId(farmId)}
 
     # Get the farm details
-    farm = db.farms.find_one({"_id":farmId})
+    farm = db.farms.find_one({"_id":ObjectId(farmId)})
     if farm is None:
         print(f"    {request.remote_addr}: Farm does not exist, {farmId}")
         raise exc.BadRequest(f"Farm does not exist, {farmId}")
