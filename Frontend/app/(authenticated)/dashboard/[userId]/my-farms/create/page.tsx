@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Save } from "lucide-react";
+import SimpleImageUpload from "@/components/ui/simple-image-upload";
 
 interface CreateFarmData {
   name: string;
@@ -22,6 +23,7 @@ interface CreateFarmData {
   contact_email: string;
   contact_phone: string;
   opening_hours: string;
+  images: string[];
 }
 
 export default function CreateFarm({ params }: { params: Promise<{ userId: string }> }) {
@@ -40,7 +42,8 @@ export default function CreateFarm({ params }: { params: Promise<{ userId: strin
     },
     contact_email: "",
     contact_phone: "",
-    opening_hours: ""
+    opening_hours: "",
+    images: []
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -49,7 +52,7 @@ export default function CreateFarm({ params }: { params: Promise<{ userId: strin
     params.then(setResolvedParams);
   }, [params]);
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | string[]) => {
     if (field.startsWith('address.')) {
       const addressField = field.split('.')[1];
       setFormData(prev => ({
@@ -113,6 +116,10 @@ export default function CreateFarm({ params }: { params: Promise<{ userId: strin
 
     if (!formData.contact_phone.trim()) {
       newErrors.contact_phone = "Contact phone is required";
+    }
+
+    if (!formData.images || formData.images.length === 0) {
+      newErrors.images = "At least one farm image is required";
     }
 
     setErrors(newErrors);
@@ -325,6 +332,21 @@ export default function CreateFarm({ params }: { params: Promise<{ userId: strin
                   placeholder="e.g., Mon-Sat 8AM-6PM"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Farm Images *</Label>
+              <SimpleImageUpload
+                value={formData.images}
+                onChange={(images) => handleInputChange('images', images)}
+                maxFiles={5}
+                folder="farms" 
+                disabled={saving}
+              />
+              {errors.images && <p className="text-red-500 text-sm">{errors.images}</p>}
+              <p className="text-sm text-gray-500">
+                Upload images of your farm to help buyers see your operation. At least one image is required.
+              </p>
             </div>
           </div>
         </div>

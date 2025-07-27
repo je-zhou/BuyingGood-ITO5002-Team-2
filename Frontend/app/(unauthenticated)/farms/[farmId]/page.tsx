@@ -144,58 +144,84 @@ export default function FarmDetailPage({
 
         {/* Photo Gallery Carousel */}
         <div className="mb-8">
-          {farm.produce && farm.produce.length > 0 && (
-            <Carousel className="w-full max-w-4xl mx-auto">
-              <CarouselContent>
-                {farm.produce
-                  .filter(
-                    (produce) => produce.images && produce.images.length > 0
-                  )
-                  .flatMap((produce) =>
-                    produce.images!.map((image, index) => ({
-                      produceId: produce.produceId,
-                      produceName: produce.name,
-                      image,
-                      key: `${produce.produceId}-${index}`,
-                    }))
-                  )
-                  .slice(0, 12)
-                  .map((item) => (
+          {/* Combine farm images and produce images */}
+          {(() => {
+            const farmImages =
+              farm.images?.map((image, index) => ({
+                type: "farm" as const,
+                image,
+                name: farm.name || "Farm",
+                key: `farm-${index}`,
+              })) || [];
+
+            const produceImages =
+              farm.produce
+                ?.filter(
+                  (produce) => produce.images && produce.images.length > 0
+                )
+                .flatMap((produce) =>
+                  produce.images!.map((image, index) => ({
+                    type: "produce" as const,
+                    produceId: produce.produceId,
+                    produceName: produce.name,
+                    image,
+                    key: `${produce.produceId}-${index}`,
+                  }))
+                ) || [];
+
+            const allImages = [...farmImages, ...produceImages].slice(0, 12);
+
+            return allImages.length > 0 ? (
+              <Carousel className="w-full max-w-4xl mx-auto">
+                <CarouselContent>
+                  {allImages.map((item) => (
                     <CarouselItem
                       key={item.key}
                       className="md:basis-1/2 lg:basis-1/3"
                     >
                       <div className="p-1">
-                        <div className="aspect-square border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
+                        <div className="aspect-square border border-gray-300 rounded-lg overflow-hidden bg-gray-50 relative">
                           <Image
                             src={item.image}
-                            alt={`${item.produceName} from ${farm.name}`}
+                            alt={
+                              item.type === "farm"
+                                ? `${item.name} farm`
+                                : `${item.produceName} from ${farm.name}`
+                            }
                             className="w-full h-full object-cover"
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
                               target.style.display = "none";
                               const parent = target.parentElement;
                               if (parent) {
-                                parent.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-gray-100"><span class="text-gray-500 text-sm">${item.produceName}</span></div>`;
+                                const displayName =
+                                  item.type === "farm"
+                                    ? item.name
+                                    : item.produceName;
+                                parent.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-gray-100"><span class="text-gray-500 text-sm">${displayName}</span></div>`;
                               }
                             }}
                           />
+                          {/* Label overlay to distinguish farm vs produce images */}
+                          <div className="absolute bottom-2 left-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+                            {item.type === "farm" ? "Farm" : item.produceName}
+                          </div>
                         </div>
                       </div>
                     </CarouselItem>
                   ))}
-              </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
-            </Carousel>
-          )}
-          {(!farm.produce ||
-            farm.produce.length === 0 ||
-            !farm.produce.some((p) => p.images && p.images.length > 0)) && (
-            <div className="text-center py-8 text-gray-500">
-              <p>No photos available for this farm&apos;s produce.</p>
-            </div>
-          )}
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+              </Carousel>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>No photos available for this farm.</p>
+              </div>
+            );
+          })()}
         </div>
 
         {/* About Section */}

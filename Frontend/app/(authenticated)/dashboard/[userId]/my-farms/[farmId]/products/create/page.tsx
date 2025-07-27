@@ -207,6 +207,11 @@ export default function CreateProductPage({ params }: { params: Promise<{ userId
       }
     }
 
+    // Validate images
+    if (!formData.images || formData.images.length === 0) {
+      newErrors.images = "At least one product image is required";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -441,7 +446,7 @@ export default function CreateProductPage({ params }: { params: Promise<{ userId
             </div>
 
             <div className="space-y-2">
-              <Label>Product Images</Label>
+              <Label>Product Images *</Label>
               <SimpleImageUpload
                 value={formData.images}
                 onChange={(images) => handleInputChange('images', images)}
@@ -449,8 +454,9 @@ export default function CreateProductPage({ params }: { params: Promise<{ userId
                 folder="products" 
                 disabled={saving}
               />
+              {errors.images && <p className="text-red-500 text-sm">{errors.images}</p>}
               <p className="text-sm text-gray-500">
-                Upload images of your product to help buyers see what they&apos;re purchasing.
+                Upload images of your product to help buyers see what they&apos;re purchasing. At least one image is required.
               </p>
             </div>
 
