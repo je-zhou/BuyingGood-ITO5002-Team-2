@@ -310,6 +310,15 @@ export function useApiClient() {
       );
     },
 
+    async getMyFarms(searchParams?: URLSearchParams) {
+      const headers = await getAuthHeaders();
+      const url = searchParams
+        ? `${API_BASE_URL}/my_farms?${searchParams.toString()}`
+        : `${API_BASE_URL}/my_farms`;
+
+      return makeApiCall(url, "GET", headers);
+    },
+
     // Auth API functions
     async getUserProfile() {
       const headers = await getAuthHeaders();
