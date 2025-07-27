@@ -718,6 +718,7 @@ def get_farm_produce(farmId : str):
 
     # Create the filter, and fill the page and limit if they have been provided
     for key in list(data.keys()):
+        print(key)
         if key == "page":
             page = int(data.get(key))
         elif key == "limit":
@@ -735,11 +736,13 @@ def get_farm_produce(farmId : str):
     cursor = db.produce.find(filter,skip=first_item-1,limit=limit)
     produce_list = [mongo_to_dict(produce, "produceId") for produce in cursor]
 
+    print(produce_list)
+
     return jsonify({
         "success": True,
         "data": {
             "farmId": farmId,
-            "farmName": farm["farmName"],
+            "farmName": farm["name"],
             "produce": produce_list,
             "pagination": {
                 "currentPage": page,
