@@ -545,6 +545,12 @@ def get_farms():
     cursor = db.farms.find(filter,skip=first_item-1,limit=limit)
     farm_list = [mongo_to_dict(farm, "farmId") for farm in cursor]
 
+    # Get the produce for each farm and add it in
+    for farm_id in range(len(farm_list)):
+        produce_list = db.produce.find({"farmId":ObjectId(farm_list[farm_id]["farmId"])})
+        produce_list = [mongo_to_dict(produce, "produceId") for produce in produce_list]
+        farm_list[farm_id]["produce"] = [produce_list]
+
     return jsonify({
         "success": True,
         "data": {
