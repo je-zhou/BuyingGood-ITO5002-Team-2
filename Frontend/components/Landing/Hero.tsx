@@ -1,8 +1,26 @@
+"use client";
+
 import React from "react";
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import SearchBar from "../SearchBar/SearchBar";
-import Link from "next/link";
 
 export default function LandingHero() {
+  const { user, isLoaded } = useUser();
+  const router = useRouter();
+
+  const handleRegisterClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+
+    if (isLoaded && user) {
+      // If user is signed in, redirect to their farm creation page
+      router.push(`/dashboard/${user.id}/my-farms/create`);
+    } else {
+      // If user is not signed in, go to sign-up page
+      router.push("/sign-up");
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen pb-32 justify-center items-center">
       <div className="flex flex-col items-center gap-4">
@@ -25,9 +43,12 @@ export default function LandingHero() {
         <div className="flex flex-col items-center gap-2 pt-8">
           <p className="text-sm text-gray-500">
             Are you a farmer?{" "}
-            <Link href="/sign-up" className="text-primary">
+            <button
+              onClick={handleRegisterClick}
+              className="text-primary hover:underline cursor-pointer"
+            >
               Register your farm
-            </Link>
+            </button>
           </p>
         </div>
       </div>
