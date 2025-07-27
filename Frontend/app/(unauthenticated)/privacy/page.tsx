@@ -38,7 +38,7 @@ export default function PrivacyPage() {
             <div>
               <h2 className="text-2xl font-semibold mb-4">What is personal information?</h2>
               <p className="text-gray-700 leading-relaxed">
-                "Personal information" means any information or opinion, whether true or not, and whether recorded in a
+                &ldquo;Personal information&rdquo; means any information or opinion, whether true or not, and whether recorded in a
                 material form or not, about an identified individual or an individual who is reasonably identifiable. In general
                 terms, this includes information or an opinion that personally identifies you either directly (e.g. your name) or
                 indirectly.
@@ -182,7 +182,7 @@ export default function PrivacyPage() {
                 We do not use cookies to identify you, just to improve your experience on our website(s). If you do not wish to
                 use the cookies, you can amend the settings on your internet browser so it will not automatically download
                 cookies. However, if you remove or block cookies on your computer, please be aware that your browsing
-                experience and our website's functionality may be affected.
+                experience and our website&rsquo;s functionality may be affected.
               </p>
 
               <h3 className="text-xl font-semibold mb-4 mt-6">Website analytics</h3>
@@ -205,8 +205,8 @@ export default function PrivacyPage() {
               </p>
               <p className="text-gray-700 leading-relaxed mb-4">
                 You may opt-out of receiving marketing communications from us at any time by following the instructions to
-                "unsubscribe" set out in the relevant communication or contacting us using the details set out in the "How to
-                contact us" section below.
+                &ldquo;unsubscribe&rdquo; set out in the relevant communication or contacting us using the details set out in the &ldquo;How to
+                contact us&rdquo; section below.
               </p>
               <p className="text-gray-700 leading-relaxed">
                 In addition, we may also use your personal information or disclose your personal information to third parties for the purposes of advertising, including online behavioural advertising, website personalisation, and to provide targeted or retargeted advertising content to you (including through third party websites).
@@ -252,7 +252,7 @@ export default function PrivacyPage() {
               </p>
               <p className="text-gray-700 leading-relaxed">
                 Please allow up to 14 days for BuyingGood to respond to your complaint. It will not always be possible to
-                resolve a complaint to everyone's satisfaction. If you are not satisfied with BuyingGood's response to a
+                resolve a complaint to everyone&rsquo;s satisfaction. If you are not satisfied with BuyingGood&rsquo;s response to a
                 complaint, you have the right to contact the Office of Australian Information Commissioner (at
                 www.oaic.gov.au/) to lodge a complaint.
               </p>
