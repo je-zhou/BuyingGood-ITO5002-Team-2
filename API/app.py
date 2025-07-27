@@ -683,9 +683,9 @@ def get_farm(farmId : str):
 def farm_produce(farmId : str):
     try:
         if request.method == "POST":
-            add_farm_produce(farmId)
+            return add_farm_produce(farmId)
         elif request.method == "GET":
-            get_farm_produce(farmId)
+            return get_farm_produce(farmId)
     except Exception as e:
         print(e)
         return exc.handle_error(e)
