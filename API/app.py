@@ -151,21 +151,11 @@ def mongo_to_dict(obj, id_name="id", exclusion_list=[]):
             
     return new_doc
 
-
-def monitor_results(func):
-    wraps(func)
-    def wrapper(*func_args, **func_kwargs):
-        print('function call ' + func.__name__ + '()')
-        retval = func(*func_args,**func_kwargs)
-        print('function ' + func.__name__ + '() returns ' + repr(retval))
-        return retval
-    return wrapper
-
 """ Authentication Endpoints """
 
 @app.route("/auth/register", methods=["POST"])
 @cross_origin()
-@monitor_results
+
 def auth_register():
     """
         Register a new farmer account
@@ -242,7 +232,6 @@ def auth_register():
 @app.route("/auth/update", methods=["POST"])
 @cross_origin()
 @clerk_auth_required
-@monitor_results
 def auth_update():
     """
         Update details of a farmer account
@@ -329,7 +318,6 @@ def auth_update():
 @app.route("/auth/delete", methods=["POST"])
 @cross_origin()
 @clerk_auth_required
-@monitor_results
 def auth_delete():
     """
         Delete a farmer account
@@ -365,7 +353,6 @@ def auth_delete():
 @app.route('/auth/profile', methods=["GET"])
 @cross_origin()
 @clerk_auth_required
-@monitor_results
 def auth_profile():
     """
         Get user profile
@@ -400,7 +387,6 @@ def auth_profile():
 @app.route('/my_farms', methods=["GET"])
 @cross_origin()
 @clerk_auth_required
-@monitor_results
 def get_my_farms():
     try:
         """
@@ -467,7 +453,6 @@ def get_my_farms():
 
 @app.route('/farms', methods=["POST", "GET"])
 @cross_origin()
-@monitor_results
 def farms():
     try:
         if request.method == "POST":
@@ -512,6 +497,7 @@ def create_farm():
         "message": "Farm registered successfully",
         "data": mongo_to_dict(farm, "farmId")
     }), 201
+
 
 def get_farms():
     """
@@ -581,7 +567,7 @@ def get_farms():
 
 @app.route('/farms/<farmId>', methods=["PUT", "DELETE", "GET"])
 @cross_origin()
-@monitor_results
+
 def farm(farmId : str):
     try:
         if request.method == "PUT":
@@ -677,6 +663,7 @@ def delete_farm(farmId : str):
         "message": "Farm deleted successfully"
     }), 200
 
+
 def get_farm(farmId : str):
     """
         Get detailed information about a specific farm
@@ -709,7 +696,7 @@ def get_farm(farmId : str):
 
 @app.route('/farms/<farmId>/produce', methods=["POST", "GET"])
 @cross_origin()
-@monitor_results
+
 def farm_produce(farmId : str):
     try:
         if request.method == "POST":
@@ -719,6 +706,7 @@ def farm_produce(farmId : str):
     except Exception as e:
         print(e)
         return exc.handle_error(e)
+
 
 def get_farm_produce(farmId : str):
     """
@@ -827,7 +815,7 @@ def add_farm_produce(farmId : str):
 
 @app.route("/produce/<produceId>", methods=["PUT", "DELETE", "GET"])
 @cross_origin()
-@monitor_results
+
 def id_produce(produceId : str):
     try:
         if request.method == "PUT":
@@ -839,6 +827,7 @@ def id_produce(produceId : str):
     except Exception as e:
         print(e)
         return exc.handle_error(e)
+
 
 def get_produce_id(produceId: str):
     """ 
@@ -989,8 +978,8 @@ def delete_produce_id(produceId: str):
     }), 201
 
 @app.route('/categories', methods=["GET"])
-@monitor_results
-@cross_origin
+@cross_origin()
+
 def categories():
     try:
         """
