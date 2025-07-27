@@ -549,7 +549,7 @@ def get_farms():
     for farm_id in range(len(farm_list)):
         produce_list = db.produce.find({"farmId":ObjectId(farm_list[farm_id]["farmId"])})
         produce_list = [mongo_to_dict(produce, "produceId") for produce in produce_list]
-        farm_list[farm_id]["produce"] = [produce_list]
+        farm_list[farm_id]["produce"] = produce_list
 
     return jsonify({
         "success": True,
@@ -685,7 +685,7 @@ def get_farm(farmId : str):
     # Get the produce for the farm and add it in
     produce_list = db.produce.find({"farmId":ObjectId(farm["farmId"])})
     produce_list = [mongo_to_dict(produce, "produceId") for produce in produce_list]
-    farm["produce"] = [produce_list]
+    farm["produce"] = produce_list
 
     return jsonify({
         "success": True,
