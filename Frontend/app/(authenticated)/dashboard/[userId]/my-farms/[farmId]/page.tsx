@@ -63,9 +63,9 @@ export default function FarmManagement({
 
     try {
       setLoading(true);
-      
+
       // Fetch farm data from the API
-      const farmData = await api.getFarmById(resolvedParams.farmId);      
+      const farmData = await api.getFarmById(resolvedParams.farmId);
       if (farmData.success) {
         setFarm(farmData.data);
         setEditedFarm(farmData.data);
@@ -79,9 +79,8 @@ export default function FarmManagement({
 
       // For now, use placeholder images
       setFarmImages(["/logo.png", "/logo.png"]);
-      
     } catch (error) {
-      console.error('Error fetching farm data:', error);
+      console.error("Error fetching farm data:", error);
     } finally {
       setLoading(false);
     }
@@ -110,8 +109,8 @@ export default function FarmManagement({
       await api.deleteFarm(farm.farmId);
       router.push(`/dashboard/${resolvedParams.userId}/my-farms`);
     } catch (error) {
-      console.error('Error deleting farm:', error);
-      alert('Failed to delete farm. Please try again.');
+      console.error("Error deleting farm:", error);
+      alert("Failed to delete farm. Please try again.");
     } finally {
       setDeleting(false);
     }
@@ -131,8 +130,8 @@ export default function FarmManagement({
       // Remove from local state after successful deletion
       setFarmProduce((prev) => prev.filter((p) => p.produceId !== produceId));
     } catch (error) {
-      console.error('Error deleting produce:', error);
-      alert('Failed to delete product. Please try again.');
+      console.error("Error deleting produce:", error);
+      alert("Failed to delete product. Please try again.");
     }
   };
 
@@ -208,27 +207,28 @@ export default function FarmManagement({
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Management Header */}
-      <div className="bg-gray-50 border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <Button
-              onClick={() =>
-                router.push(`/dashboard/${resolvedParams.userId}/my-farms`)
-              }
-              variant="outline"
-              size="sm"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Farms
-            </Button>
-
+    <div>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mb-6">
+          <Button
+            onClick={() => router.push(`/dashboard/${resolvedParams.userId}/my-farms`)}
+            variant="outline"
+            size="sm"
+            className="mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Farms
+          </Button>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {isPreviewMode ? "Farm Preview" : "Edit Farm"}
+              </h1>
+              <p className="text-gray-600">
+                {isPreviewMode ? "Preview how visitors see your farm" : "Update your farm information"}
+              </p>
+            </div>
             <div className="flex gap-2">
-              <Button onClick={handleCreateProduct} variant="outline" size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Product
-              </Button>
               <Button onClick={togglePreviewMode} variant="outline" size="sm">
                 <Eye className="w-4 h-4 mr-2" />
                 {isPreviewMode ? "Edit Mode" : "Preview"}
@@ -236,10 +236,8 @@ export default function FarmManagement({
               {!isPreviewMode && (
                 <Button
                   onClick={handleSaveFarm}
-                  variant="outline"
-                  size="sm"
-                  className="bg-green-600 text-white hover:bg-green-700"
                   disabled={saving}
+                  className="bg-green-600 hover:bg-green-700"
                 >
                   {saving ? (
                     <>
@@ -278,395 +276,503 @@ export default function FarmManagement({
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <p className="text-sm text-gray-600 mb-4">Producer Profile Page</p>
-          {isPreviewMode ? (
-            <>
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                {farm.name}
-              </h1>
-              <div className="inline-block bg-gray-100 px-3 py-1 rounded text-sm text-gray-700">
-                {farm.address?.city} {farm.address?.state}
-              </div>
-            </>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <Label
-                  htmlFor="farmName"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Farm Name
-                </Label>
-                <Input
-                  id="farmName"
-                  value={editedFarm?.name || ""}
-                  onChange={(e) =>
-                    handleFarmInputChange("name", e.target.value)
-                  }
-                  className="text-3xl font-bold border-none px-0 h-auto shadow-none focus-visible:ring-0"
-                  placeholder="Enter farm name"
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label
-                    htmlFor="city"
-                    className="text-sm font-medium text-gray-700"
-                  >
-                    City
-                  </Label>
-                  <Input
-                    id="city"
-                    value={editedFarm?.address?.city || ""}
-                    onChange={(e) =>
-                      handleFarmInputChange("address.city", e.target.value)
-                    }
-                    placeholder="Enter city"
-                  />
-                </div>
-                <div>
-                  <Label
-                    htmlFor="state"
-                    className="text-sm font-medium text-gray-700"
-                  >
-                    State
-                  </Label>
-                  <Input
-                    id="state"
-                    value={editedFarm?.address?.state || ""}
-                    onChange={(e) =>
-                      handleFarmInputChange("address.state", e.target.value)
-                    }
-                    placeholder="Enter state"
-                  />
-                </div>
+      {isPreviewMode ? (
+        // PREVIEW MODE - matches unauthenticated farm page layout
+        <div className="min-h-screen bg-white">
+          <div className="max-w-4xl mx-auto px-4 py-8">
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">{farm.name}</h1>
+              <div className="bg-gray-100 px-2 py-1 rounded text-sm text-gray-700 flex items-center gap-2 w-fit">
+                <MapPin className="w-4 h-4 text-gray-500" />
+                <p>
+                  {farm.address?.street}, {farm.address?.city}, {farm.address?.state}
+                </p>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* Photo Gallery */}
-        <div className="mb-8">
-          {isPreviewMode ? (
-            <Carousel className="w-full max-w-4xl mx-auto">
-              <CarouselContent>
-                {farmImages.map((image, index) => (
-                  <CarouselItem
-                    key={index}
-                    className="md:basis-1/2 lg:basis-1/3"
-                  >
-                    <div className="p-1">
-                      <div className="aspect-square border border-gray-300 rounded-lg overflow-hidden bg-gray-50 relative">
-                        <Image
-                          src={image}
-                          alt={`Farm photo ${index + 1}`}
-                          className="object-cover"
-                          fill
-                        />
-                      </div>
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
-            </Carousel>
-          ) : (
-            <div>
-              <Label className="text-sm font-medium text-gray-700 mb-4 block">
-                Farm Photos
-              </Label>
-              <SimpleImageUpload
-                value={farmImages}
-                onChange={handleImageChange}
-                maxFiles={6}
-                folder="farms"
-                disabled={saving}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* About Section */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">About</h2>
-          {isPreviewMode ? (
-            <div className="space-y-4">
-              <p className="text-gray-700 leading-relaxed">
-                {farm.description}
-              </p>
-              <p className="text-gray-700 leading-relaxed">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-                eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-                enim ad minim veniam, quis nostrud exercitation ullamco laboris
-                nisi ut aliquip ex ea commodo consequat.
-              </p>
-            </div>
-          ) : (
-            <div>
-              <Label
-                htmlFor="description"
-                className="text-sm font-medium text-gray-700"
-              >
-                Farm Description
-              </Label>
-              <Textarea
-                id="description"
-                value={editedFarm?.description || ""}
-                onChange={(e) =>
-                  handleFarmInputChange("description", e.target.value)
-                }
-                className="mt-2 min-h-32"
-                placeholder="Describe your farm, what you grow, your farming practices..."
-              />
-            </div>
-          )}
-        </div>
-
-        {/* We Produce Section */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">We Produce</h2>
-            <Button
-              onClick={handleCreateProduct}
-              size="sm"
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Product
-            </Button>
-          </div>
-
-          {farmProduce.length === 0 ? (
-            <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
-              <div className="text-gray-400 mb-4">
-                <Plus className="w-12 h-12 mx-auto mb-2" />
-                <p>No products added yet</p>
-              </div>
-              <Button
-                onClick={handleCreateProduct}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                Add Your First Product
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {farmProduce.map((produce) => {
-                const primaryCategory = produce.category?.[0] || "other";
-                const categoryIcon =
-                  {
-                    honey: "🍯",
-                    vegetables: "🥕",
-                    fruits: "🍎",
-                    coffeeAndTea: "☕",
-                    nutsSeeds: "🥜",
-                    eggsAndMilk: "🥛",
-                    herbs: "🌿",
-                    herbsAndSpices: "🌿",
-                    grain: "🌾",
-                    legumes: "🫘",
-                    livestock: "🐄",
-                    seafood: "🐟",
-                    forestry: "🌲",
-                    other: "🌱",
-                  }[primaryCategory] || "🌱";
-
-                return (
-                  <div key={produce.produceId} className="relative">
-                    <ProductCard
-                      produce={produce}
-                      categoryIcon={categoryIcon}
-                    />
-                    {/* Management buttons overlay */}
-                    <div className="absolute top-2 right-2 flex gap-1">
-                      <Button
-                        onClick={() => handleEditProduct(produce)}
-                        size="sm"
-                        variant="secondary"
-                        className="h-6 w-6 p-0"
-                      >
-                        <Edit className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        onClick={() => handleDeleteProduce(produce.produceId)}
-                        size="sm"
-                        variant="secondary"
-                        className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Get in Touch Section */}
-        <div className="mb-12">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">
-            Get in Touch
-          </h2>
-
-          {/* Contact Info and Map Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-            {/* Contact Info Card */}
-            <div className="border border-gray-200 rounded-lg p-6">
-              {isPreviewMode ? (
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3 text-gray-700">
-                    <MapPin className="w-4 h-4 mt-1 text-gray-500" />
-                    <div>
-                      <div className="font-medium text-blue-600 underline cursor-pointer">
-                        {farm.address?.street} {farm.address?.state}{" "}
-                        {farm.address?.zipCode}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 text-gray-700">
-                    <Phone className="w-4 h-4 text-gray-500" />
-                    <span>{farm.contact_phone}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-gray-700">
-                    <Mail className="w-4 h-4 text-gray-500" />
-                    <span>{farm.contact_email}</span>
-                  </div>
-                  <div className="flex items-start gap-3 text-gray-700">
-                    <Clock className="w-4 h-4 mt-1 text-gray-500" />
-                    <span>{farm.opening_hours}</span>
-                  </div>
-                </div>
+            {/* Photo Gallery Carousel - using produce images like unauthenticated page */}
+            <div className="mb-8">
+              {farmProduce && farmProduce.length > 0 && farmProduce.some(p => p.images && p.images.length > 0) ? (
+                <Carousel className="w-full max-w-4xl mx-auto">
+                  <CarouselContent>
+                    {farmProduce
+                      .filter(produce => produce.images && produce.images.length > 0)
+                      .flatMap(produce =>
+                        produce.images!.map((image, index) => ({
+                          produceId: produce.produceId,
+                          produceName: produce.name,
+                          image,
+                          key: `${produce.produceId}-${index}`,
+                        }))
+                      )
+                      .slice(0, 12)
+                      .map((item) => (
+                        <CarouselItem
+                          key={item.key}
+                          className="md:basis-1/2 lg:basis-1/3"
+                        >
+                          <div className="p-1">
+                            <div className="aspect-square border border-gray-300 rounded-lg overflow-hidden bg-gray-50 relative">
+                              <Image
+                                src={item.image}
+                                alt={`${item.produceName} from ${farm.name}`}
+                                className="object-cover"
+                                fill
+                              />
+                            </div>
+                          </div>
+                        </CarouselItem>
+                      ))}
+                  </CarouselContent>
+                  <CarouselPrevious />
+                  <CarouselNext />
+                </Carousel>
               ) : (
-                <div className="space-y-4">
-                  <div>
-                    <Label
-                      htmlFor="street"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      Street Address
-                    </Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <MapPin className="w-4 h-4 text-gray-500" />
-                      <Input
-                        id="street"
-                        value={editedFarm?.address?.street || ""}
-                        onChange={(e) =>
-                          handleFarmInputChange(
-                            "address.street",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Enter street address"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label
-                      htmlFor="zipCode"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      Zip Code
-                    </Label>
-                    <Input
-                      id="zipCode"
-                      value={editedFarm?.address?.zipCode || ""}
-                      onChange={(e) =>
-                        handleFarmInputChange("address.zipCode", e.target.value)
-                      }
-                      placeholder="Enter zip code"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label
-                      htmlFor="phone"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      Phone
-                    </Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Phone className="w-4 h-4 text-gray-500" />
-                      <Input
-                        id="phone"
-                        value={editedFarm?.contact_phone || ""}
-                        onChange={(e) =>
-                          handleFarmInputChange("contact_phone", e.target.value)
-                        }
-                        placeholder="Enter phone number"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label
-                      htmlFor="email"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      Email
-                    </Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Mail className="w-4 h-4 text-gray-500" />
-                      <Input
-                        id="email"
-                        value={editedFarm?.contact_email || ""}
-                        onChange={(e) =>
-                          handleFarmInputChange("contact_email", e.target.value)
-                        }
-                        placeholder="Enter email address"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label
-                      htmlFor="hours"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      Opening Hours
-                    </Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Clock className="w-4 h-4 text-gray-500" />
-                      <Input
-                        id="hours"
-                        value={editedFarm?.opening_hours || ""}
-                        onChange={(e) =>
-                          handleFarmInputChange("opening_hours", e.target.value)
-                        }
-                        placeholder="e.g., Mon-Sat 8AM-6PM"
-                      />
-                    </div>
-                  </div>
+                <div className="text-center py-8 text-gray-500">
+                  <p>No photos available for this farm&apos;s produce.</p>
                 </div>
               )}
             </div>
 
-            {/* Map Card */}
-            <div className="border border-gray-200 rounded-lg p-6">
-              <div className="text-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Map</h3>
-              </div>
-              <div className="w-full h-48">
-                {farm.address && farm.address.street && farm.address.city && farm.address.state && farm.address.zipCode && (
-                  <Map address={farm.address as {street: string; city: string; state: string; zipCode: string}} className="w-full h-full rounded" />
-                )}
+            {/* About Section */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">About</h2>
+              <p className="text-gray-700 leading-relaxed mb-4">
+                {farm.description}
+              </p>
+            </div>
+
+            {/* We Produce Section - NO "Add Product" button in preview */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">We Produce</h2>
+              {farmProduce && farmProduce.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {farmProduce.map((produce) => {
+                    const primaryCategory = produce.category?.[0] || "other";
+                    const categoryIcon = {
+                      honey: "🍯",
+                      vegetables: "🥕",
+                      fruits: "🍎",
+                      coffeeAndTea: "☕",
+                      nutsSeeds: "🥜",
+                      eggsAndMilk: "🥛",
+                      herbs: "🌿",
+                      herbsAndSpices: "🌿",
+                      grain: "🌾",
+                      legumes: "🫘",
+                      livestock: "🐄",
+                      seafood: "🐟",
+                      forestry: "🌲",
+                      other: "🌱",
+                    }[primaryCategory] || "🌱";
+
+                    return (
+                      <ProductCard
+                        key={produce.produceId}
+                        produce={produce}
+                        categoryIcon={categoryIcon}
+                      />
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No produce items are currently listed for this farm.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Get in Touch Section */}
+            <div className="mb-12">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Get in Touch</h2>
+              
+              {/* Contact Info and Map Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                {/* Contact Info Card */}
+                <div className="border border-gray-200 rounded-lg p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3 text-gray-700">
+                      <MapPin className="w-4 h-4 mt-1 text-gray-500" />
+                      <div>
+                        <div className="font-medium text-blue-600 underline cursor-pointer">
+                          {farm.address?.street} {farm.address?.state} {farm.address?.zipCode}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 text-gray-700">
+                      <Phone className="w-4 h-4 text-gray-500" />
+                      <span>{farm.contact_phone}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-gray-700">
+                      <Mail className="w-4 h-4 text-gray-500" />
+                      <span>{farm.contact_email}</span>
+                    </div>
+                    <div className="flex items-start gap-3 text-gray-700">
+                      <Clock className="w-4 h-4 mt-1 text-gray-500" />
+                      <span>{farm.opening_hours}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Map Card */}
+                <div className="border border-gray-200 rounded-lg p-6">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-medium text-gray-900">Map</h3>
+                  </div>
+                  <div className="w-full h-48">
+                    {farm.address &&
+                      farm.address.street &&
+                      farm.address.city &&
+                      farm.address.state &&
+                      farm.address.zipCode && (
+                        <Map
+                          address={
+                            farm.address as {
+                              street: string;
+                              city: string;
+                              state: string;
+                              zipCode: string;
+                            }
+                          }
+                          className="w-full h-full rounded"
+                        />
+                      )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+      ) : (
+        // EDIT MODE - original management interface
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white">
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            {/* Header */}
+            <div className="mb-8">
+              <p className="text-sm text-gray-600 mb-4">Producer Profile Page</p>
+              <div className="space-y-4">
+                <div>
+                  <Label
+                    htmlFor="farmName"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Farm Name
+                  </Label>
+                  <Input
+                    id="farmName"
+                    value={editedFarm?.name || ""}
+                    onChange={(e) =>
+                      handleFarmInputChange("name", e.target.value)
+                    }
+                    className="text-3xl font-bold border-none px-0 h-auto shadow-none focus-visible:ring-0"
+                    placeholder="Enter farm name"
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label
+                      htmlFor="city"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      City
+                    </Label>
+                    <Input
+                      id="city"
+                      value={editedFarm?.address?.city || ""}
+                      onChange={(e) =>
+                        handleFarmInputChange("address.city", e.target.value)
+                      }
+                      placeholder="Enter city"
+                    />
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="state"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      State
+                    </Label>
+                    <Input
+                      id="state"
+                      value={editedFarm?.address?.state || ""}
+                      onChange={(e) =>
+                        handleFarmInputChange("address.state", e.target.value)
+                      }
+                      placeholder="Enter state"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
 
-          {/* Management Note */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-blue-800 text-sm">
-              <strong>{isPreviewMode ? "Preview Mode:" : "Edit Mode:"}</strong>{" "}
-              {isPreviewMode
-                ? "This is how visitors will see your farm profile."
-                : "You are currently editing your farm information. Click Preview to see how it will look to visitors."}
-            </p>
+            {/* Photo Gallery */}
+            <div className="mb-8">
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-4 block">
+                  Farm Photos
+                </Label>
+                <SimpleImageUpload
+                  value={farmImages}
+                  onChange={handleImageChange}
+                  maxFiles={6}
+                  folder="farms"
+                  disabled={saving}
+                />
+              </div>
+            </div>
+
+            {/* About Section */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">About</h2>
+              <div>
+                <Label
+                  htmlFor="description"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Farm Description
+                </Label>
+                <Textarea
+                  id="description"
+                  value={editedFarm?.description || ""}
+                  onChange={(e) =>
+                    handleFarmInputChange("description", e.target.value)
+                  }
+                  className="mt-2 min-h-32"
+                  placeholder="Describe your farm, what you grow, your farming practices..."
+                />
+              </div>
+            </div>
+
+            {/* We Produce Section */}
+            <div className="mb-8">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">We Produce</h2>
+                <Button
+                  onClick={handleCreateProduct}
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Product
+                </Button>
+              </div>
+
+              {farmProduce.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
+                  <div className="text-gray-400 mb-4">
+                    <Plus className="w-12 h-12 mx-auto mb-2" />
+                    <p>No products added yet</p>
+                  </div>
+                  <Button
+                    onClick={handleCreateProduct}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    Add Your First Product
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {farmProduce.map((produce) => {
+                    const primaryCategory = produce.category?.[0] || "other";
+                    const categoryIcon =
+                      {
+                        honey: "🍯",
+                        vegetables: "🥕",
+                        fruits: "🍎",
+                        coffeeAndTea: "☕",
+                        nutsSeeds: "🥜",
+                        eggsAndMilk: "🥛",
+                        herbs: "🌿",
+                        herbsAndSpices: "🌿",
+                        grain: "🌾",
+                        legumes: "🫘",
+                        livestock: "🐄",
+                        seafood: "🐟",
+                        forestry: "🌲",
+                        other: "🌱",
+                      }[primaryCategory] || "🌱";
+
+                    return (
+                      <div key={produce.produceId} className="relative">
+                        <ProductCard
+                          produce={produce}
+                          categoryIcon={categoryIcon}
+                        />
+                        {/* Management buttons overlay */}
+                        <div className="absolute top-2 right-2 flex gap-1">
+                          <Button
+                            onClick={() => handleEditProduct(produce)}
+                            size="sm"
+                            variant="secondary"
+                            className="h-6 w-6 p-0"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteProduce(produce.produceId)}
+                            size="sm"
+                            variant="secondary"
+                            className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Get in Touch Section */}
+            <div className="mb-12">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">
+                Get in Touch
+              </h2>
+
+              {/* Contact Info and Map Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                {/* Contact Info Card */}
+                <div className="border border-gray-200 rounded-lg p-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label
+                        htmlFor="street"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        Street Address
+                      </Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <MapPin className="w-4 h-4 text-gray-500" />
+                        <Input
+                          id="street"
+                          value={editedFarm?.address?.street || ""}
+                          onChange={(e) =>
+                            handleFarmInputChange(
+                              "address.street",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Enter street address"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label
+                        htmlFor="zipCode"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        Zip Code
+                      </Label>
+                      <Input
+                        id="zipCode"
+                        value={editedFarm?.address?.zipCode || ""}
+                        onChange={(e) =>
+                          handleFarmInputChange("address.zipCode", e.target.value)
+                        }
+                        placeholder="Enter zip code"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label
+                        htmlFor="phone"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        Phone
+                      </Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Phone className="w-4 h-4 text-gray-500" />
+                        <Input
+                          id="phone"
+                          value={editedFarm?.contact_phone || ""}
+                          onChange={(e) =>
+                            handleFarmInputChange("contact_phone", e.target.value)
+                          }
+                          placeholder="Enter phone number"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label
+                        htmlFor="email"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        Email
+                      </Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Mail className="w-4 h-4 text-gray-500" />
+                        <Input
+                          id="email"
+                          value={editedFarm?.contact_email || ""}
+                          onChange={(e) =>
+                            handleFarmInputChange("contact_email", e.target.value)
+                          }
+                          placeholder="Enter email address"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label
+                        htmlFor="hours"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        Opening Hours
+                      </Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Clock className="w-4 h-4 text-gray-500" />
+                        <Input
+                          id="hours"
+                          value={editedFarm?.opening_hours || ""}
+                          onChange={(e) =>
+                            handleFarmInputChange("opening_hours", e.target.value)
+                          }
+                          placeholder="e.g., Mon-Sat 8AM-6PM"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Map Card */}
+                <div className="border border-gray-200 rounded-lg p-6">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-medium text-gray-900">Map</h3>
+                  </div>
+                  <div className="w-full h-48">
+                    {farm.address &&
+                      farm.address.street &&
+                      farm.address.city &&
+                      farm.address.state &&
+                      farm.address.zipCode && (
+                        <Map
+                          address={
+                            farm.address as {
+                              street: string;
+                              city: string;
+                              state: string;
+                              zipCode: string;
+                            }
+                          }
+                          className="w-full h-full rounded"
+                        />
+                      )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Management Note */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-blue-800 text-sm">
+                  <strong>Edit Mode:</strong>{" "}
+                  You are currently editing your farm information. Click Preview to see how it will look to visitors.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

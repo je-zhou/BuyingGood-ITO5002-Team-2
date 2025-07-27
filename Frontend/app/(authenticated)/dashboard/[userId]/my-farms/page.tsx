@@ -23,8 +23,14 @@ interface Farm {
   createdAt: string;
 }
 
-export default function FarmsPage({ params }: { params: Promise<{ userId: string }> }) {
-  const [resolvedParams, setResolvedParams] = useState<{ userId: string } | null>(null);
+export default function FarmsPage({
+  params,
+}: {
+  params: Promise<{ userId: string }>;
+}) {
+  const [resolvedParams, setResolvedParams] = useState<{
+    userId: string;
+  } | null>(null);
 
   useEffect(() => {
     params.then(setResolvedParams);
@@ -35,17 +41,19 @@ export default function FarmsPage({ params }: { params: Promise<{ userId: string
       {/* Title */}
       <h1 className="font-semibold text-3xl pb-8">Farms</h1>
 
-        {/* Wrap the content that needs to load with Suspense */}
-        <Suspense fallback={<FarmsSkeletonLoader userId={resolvedParams?.userId} />}>
-          <FarmsContent userId={resolvedParams?.userId} />
-        </Suspense>
+      {/* Wrap the content that needs to load with Suspense */}
+      <Suspense
+        fallback={<FarmsSkeletonLoader userId={resolvedParams?.userId} />}
+      >
+        <FarmsContent userId={resolvedParams?.userId} />
+      </Suspense>
     </div>
   );
 }
 
 function CreateFarmTile({ userId }: { userId?: string }) {
   if (!userId) return null;
-  
+
   return (
     <Link
       href={`/dashboard/${userId}/my-farms/create`}
@@ -59,7 +67,7 @@ function CreateFarmTile({ userId }: { userId?: string }) {
 
 function FarmTile({ farm, userId }: { farm: Farm; userId?: string }) {
   if (!userId) return null;
-  
+
   return (
     <Link
       href={`/dashboard/${userId}/my-farms/${farm.farmId}`}
@@ -71,10 +79,6 @@ function FarmTile({ farm, userId }: { farm: Farm; userId?: string }) {
           <p className="text-gray-400 text-sm">
             {farm.address.city}, {farm.address.state}
           </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="h-3 w-3 bg-green-500 rounded-full"></div>
-          <span className="text-sm text-gray-500">Active</span>
         </div>
       </div>
       <div className="w-full h-full px-4 py-2 space-y-2">
@@ -107,19 +111,20 @@ const FarmsContent = ({ userId }: { userId?: string }) => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Fetch farms for the current user using client API
-      const data = await api.getFarms();
-      
+
+      // Fetch farms for the current user using the my_farms endpoint
+      const data = await api.getMyFarms();
+
       if (data.success) {
-        // Filter farms by owner if backend doesn't do it
-        const userFarms = data.data.farms.filter((farm: Farm) => farm.ownerId === userId);
-        setFarms(userFarms);
+        // The backend already filters farms by the authenticated user
+        setFarms(data.data.farms);
       }
-      
     } catch (error) {
-      console.error('Error fetching farms:', error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred while fetching farms";
+      console.error("Error fetching farms:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Unknown error occurred while fetching farms";
       setError(errorMessage);
       setFarms([]);
     } finally {
@@ -152,12 +157,14 @@ const FarmsContent = ({ userId }: { userId?: string }) => {
     return (
       <div className="w-full">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-red-800 mb-4">Error Details</h3>
+          <h3 className="text-lg font-semibold text-red-800 mb-4">
+            Error Details
+          </h3>
           <pre className="text-sm text-red-700 whitespace-pre-wrap bg-red-100 p-4 rounded border overflow-auto max-h-96">
             {error}
           </pre>
           <div className="mt-4">
-            <button 
+            <button
               onClick={() => retryFetch()}
               className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
             >
