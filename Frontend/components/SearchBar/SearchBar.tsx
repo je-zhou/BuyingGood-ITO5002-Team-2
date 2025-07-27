@@ -153,11 +153,11 @@ export default function SearchBar({
 
   return (
     <div className="w-full">
-      <div className="flex items-center gap-4 w-full h-full">
-        <div className="flex items-center w-full h-full">
+      <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 w-full h-full">
+        <div className="flex flex-col md:flex-row items-center w-full h-full gap-2 md:gap-0">
           <Input
             placeholder="I want to buy..."
-            className="rounded-l-sm rounded-r-none h-12"
+            className="rounded-sm md:rounded-l-sm md:rounded-r-none h-10 md:h-12 w-full"
             type="text"
             value={productQuery}
             onChange={(e) => {
@@ -168,20 +168,21 @@ export default function SearchBar({
               }
             }}
           />
-          <label className="relative">
+          <label className="relative w-full">
             <Globe2 className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 stroke-1" />
             <Input
               type="text"
               placeholder="Cairns, QLD..."
-              className="border-l-0 rounded-l-none rounded-r-sm pl-10 h-12"
+              className="md:border-l-0 rounded-sm md:rounded-l-none md:rounded-r-sm pl-10 h-10 md:h-12 w-full"
               value={locationQuery}
               onChange={(e) => setLocationQuery(e.target.value)}
             />
           </label>
         </div>
 
-        <Button className="h-12 cursor-pointer" onClick={handleSearch}>
-          Find Local Farmers
+        <Button className="h-10 md:h-12 cursor-pointer w-full md:w-auto px-3 md:px-4 text-sm md:text-base" onClick={handleSearch}>
+          <span className="hidden md:inline">Find Local Farmers</span>
+          <span className="md:hidden">Search</span>
         </Button>
       </div>
 

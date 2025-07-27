@@ -12,7 +12,7 @@ export default function Landing() {
       <div id="nearby-farms">
         <LandingHero />
       </div>
-      <div className="flex flex-col gap-72 pb-40">
+      <div className="flex flex-col gap-16 md:gap-32 lg:gap-72 pb-16 md:pb-24 lg:pb-40">
         <div id="our-story">
           <OurStory />
         </div>
