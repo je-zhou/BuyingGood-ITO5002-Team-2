@@ -678,10 +678,17 @@ def get_farm(farmId : str):
     # If no farm was found return an error
     if farm is None:
         raise exc.BadRequest(f"Farm not found, {farmId}")
+    
+    farm = mongo_to_dict(farm, "farmId") 
+
+    # Get the produce for the farm and add it in
+    produce_list = db.produce.find({"farmId":ObjectId(farm["farmId"])})
+    produce_list = [mongo_to_dict(produce, "produceId") for produce in produce_list]
+    farm["produce"] = [produce_list]
 
     return jsonify({
         "success": True,
-        "data": mongo_to_dict(farm, "farmId") # TODO: add exclusion list
+        "data": farm # TODO: add exclusion list
     }), 200
 
 @app.route('/farms/<farmId>/produce', methods=["POST", "GET"])
