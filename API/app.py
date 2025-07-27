@@ -155,7 +155,6 @@ def mongo_to_dict(obj, id_name="id", exclusion_list=[]):
 
 @app.route("/auth/register", methods=["POST"])
 @cross_origin()
-
 def auth_register():
     """
         Register a new farmer account
@@ -567,7 +566,6 @@ def get_farms():
 
 @app.route('/farms/<farmId>', methods=["PUT", "DELETE", "GET"])
 @cross_origin()
-
 def farm(farmId : str):
     try:
         if request.method == "PUT":
@@ -696,7 +694,6 @@ def get_farm(farmId : str):
 
 @app.route('/farms/<farmId>/produce', methods=["POST", "GET"])
 @cross_origin()
-
 def farm_produce(farmId : str):
     try:
         if request.method == "POST":
@@ -815,7 +812,6 @@ def add_farm_produce(farmId : str):
 
 @app.route("/produce/<produceId>", methods=["PUT", "DELETE", "GET"])
 @cross_origin()
-
 def id_produce(produceId : str):
     try:
         if request.method == "PUT":
@@ -979,7 +975,6 @@ def delete_produce_id(produceId: str):
 
 @app.route('/categories', methods=["GET"])
 @cross_origin()
-
 def categories():
     try:
         """
