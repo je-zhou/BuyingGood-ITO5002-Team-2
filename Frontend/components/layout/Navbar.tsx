@@ -60,6 +60,12 @@ export default function Navbar() {
           Our Story
         </button>
         <button
+          onClick={() => scrollToSection("data-viz")}
+          className="hover:text-primary cursor-pointer"
+        >
+          The Problem in Numbers
+        </button>
+        <button
           onClick={() => scrollToSection("our-solution")}
           className="hover:text-primary cursor-pointer"
         >
