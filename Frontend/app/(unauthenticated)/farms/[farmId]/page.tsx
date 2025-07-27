@@ -28,41 +28,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import { unauthenticatedApiClient } from "@/lib/api-client";
-
-interface Farm {
-  farmId: string;
-  name: string;
-  description: string;
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
-  contact_email: string;
-  contact_phone: string;
-  opening_hours: string;
-  produce?: Produce[];
-  ownerId: string;
-  createdAt: string;
-}
-
-interface Produce {
-  id: string;
-  name: string;
-  category: string[];
-  description: string;
-  pricePerUnit: number;
-  unit: string;
-  minimumOrderQuantity: number;
-  minimumOrderUnit: string;
-  availabilityWindows: {
-    startMonth: number;
-    endMonth: number;
-  }[];
-  images: string[];
-  createdAt: string;
-}
+import { Farm } from "@/lib/api-types";
+import Image from "next/image";
 
 // Contact form schema
 const contactFormSchema = z.object({
@@ -169,28 +136,66 @@ export default function FarmDetailPage({
           <div className="bg-gray-100 px-2 py-1 rounded text-sm text-gray-700 flex items-center gap-2 w-fit">
             <MapPin className="w-4 h-4 text-gray-500" />
             <p>
-              {farm.address.street}, {farm.address.city}, {farm.address.state}
+              {farm.address?.street}, {farm.address?.city},{" "}
+              {farm.address?.state}
             </p>
           </div>
         </div>
 
         {/* Photo Gallery Carousel */}
         <div className="mb-8">
-          <Carousel className="w-full max-w-4xl mx-auto">
-            <CarouselContent>
-              {[1, 2, 3, 4, 5].map((index) => (
-                <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
-                  <div className="p-1">
-                    <div className="aspect-square border border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
-                      <span className="text-gray-500">Photo {index}</span>
-                    </div>
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
-          </Carousel>
+          {farm.produce && farm.produce.length > 0 && (
+            <Carousel className="w-full max-w-4xl mx-auto">
+              <CarouselContent>
+                {farm.produce
+                  .filter(
+                    (produce) => produce.images && produce.images.length > 0
+                  )
+                  .flatMap((produce) =>
+                    produce.images!.map((image, index) => ({
+                      produceId: produce.produceId,
+                      produceName: produce.name,
+                      image,
+                      key: `${produce.produceId}-${index}`,
+                    }))
+                  )
+                  .slice(0, 12)
+                  .map((item) => (
+                    <CarouselItem
+                      key={item.key}
+                      className="md:basis-1/2 lg:basis-1/3"
+                    >
+                      <div className="p-1">
+                        <div className="aspect-square border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
+                          <Image
+                            src={item.image}
+                            alt={`${item.produceName} from ${farm.name}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = "none";
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-gray-100"><span class="text-gray-500 text-sm">${item.produceName}</span></div>`;
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </CarouselItem>
+                  ))}
+              </CarouselContent>
+              <CarouselPrevious />
+              <CarouselNext />
+            </Carousel>
+          )}
+          {(!farm.produce ||
+            farm.produce.length === 0 ||
+            !farm.produce.some((p) => p.images && p.images.length > 0)) && (
+            <div className="text-center py-8 text-gray-500">
+              <p>No photos available for this farm&apos;s produce.</p>
+            </div>
+          )}
         </div>
 
         {/* About Section */}
@@ -198,24 +203,6 @@ export default function FarmDetailPage({
           <h2 className="text-xl font-semibold text-gray-900 mb-4">About</h2>
           <p className="text-gray-700 leading-relaxed mb-4">
             {farm.description}
-          </p>
-          <p className="text-gray-700 leading-relaxed mb-4">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-            eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
-            ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-            aliquip ex ea commodo consequat.
-          </p>
-          <p className="text-gray-700 leading-relaxed mb-4">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-            eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
-            ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-            aliquip ex ea commodo consequat.
-          </p>
-          <p className="text-gray-700 leading-relaxed">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-            eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
-            ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-            aliquip ex ea commodo consequat.
           </p>
         </div>
 
@@ -227,7 +214,7 @@ export default function FarmDetailPage({
           {farm.produce && farm.produce.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {farm.produce.map((produce) => {
-                const primaryCategory = produce.category[0] || "other";
+                const primaryCategory = produce.category?.[0] || "other";
                 const categoryIcon =
                   {
                     honey: "🍯",
@@ -248,7 +235,7 @@ export default function FarmDetailPage({
 
                 return (
                   <ProductCard
-                    key={produce.id}
+                    key={produce.produceId}
                     produce={produce}
                     categoryIcon={categoryIcon}
                   />
@@ -277,7 +264,7 @@ export default function FarmDetailPage({
                   <MapPin className="w-4 h-4 mt-1 text-gray-500" />
                   <div>
                     <div className="font-medium text-blue-600 underline cursor-pointer">
-                      {farm.address.street} QLD {farm.address.zipCode}
+                      {farm.address?.street} QLD {farm.address?.zipCode}
                     </div>
                   </div>
                 </div>
@@ -302,7 +289,23 @@ export default function FarmDetailPage({
                 <h3 className="text-lg font-medium text-gray-900">Map</h3>
               </div>
               <div className="w-full h-48">
-                <Map address={farm.address} className="w-full h-full rounded" />
+                {farm.address &&
+                  farm.address.street &&
+                  farm.address.city &&
+                  farm.address.state &&
+                  farm.address.zipCode && (
+                    <Map
+                      address={
+                        farm.address as {
+                          street: string;
+                          city: string;
+                          state: string;
+                          zipCode: string;
+                        }
+                      }
+                      className="w-full h-full rounded"
+                    />
+                  )}
               </div>
             </div>
           </div>

@@ -13,41 +13,7 @@ import ProductHoverCard from "@/components/ProductHoverCard/ProductHoverCard";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { unauthenticatedApiClient } from "@/lib/api-client";
-
-interface Farm {
-  farmId: string;
-  name: string;
-  description: string;
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
-  contact_email: string;
-  contact_phone: string;
-  opening_hours: string;
-  produce?: Produce[];
-  ownerId: string;
-  createdAt: string;
-}
-
-interface Produce {
-  id: string;
-  name: string;
-  category: string[];
-  description: string;
-  pricePerUnit: number;
-  unit: string;
-  minimumOrderQuantity: number;
-  minimumOrderUnit: string;
-  availabilityWindows: {
-    startMonth: number;
-    endMonth: number;
-  }[];
-  images: string[];
-  createdAt: string;
-}
+import { Farm, Produce } from "@/lib/api-types";
 
 interface SearchResponse {
   success: boolean;
@@ -384,7 +350,7 @@ function FarmsPageContent() {
                       {farm.name}
                     </h2>
                     <p className="text-gray-600 mb-3">
-                      {farm.address.city} {farm.address.state}
+                      {farm.address?.city} {farm.address?.state}
                     </p>
                     <Link href={`/farms/${farm.farmId}`}>
                       <Button
@@ -400,7 +366,7 @@ function FarmsPageContent() {
                   <div className="flex-shrink-0">
                     <div className="flex flex-wrap gap-2 justify-end">
                       {farm.produce?.map((produce) => (
-                        <div key={produce.id} className="relative">
+                        <div key={produce.produceId} className="relative">
                           <Button
                             variant="outline"
                             size="sm"
@@ -419,7 +385,7 @@ function FarmsPageContent() {
 
                           {/* Hover Card */}
                           {hoveredFarm === farm.farmId &&
-                            hoveredProduce?.id === produce.id && (
+                            hoveredProduce?.produceId === produce.produceId && (
                               <div className="absolute top-full right-0 mt-2 z-10">
                                 <ProductHoverCard produce={produce} />
                               </div>

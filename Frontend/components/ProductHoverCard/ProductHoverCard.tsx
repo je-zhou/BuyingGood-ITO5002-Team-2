@@ -1,21 +1,5 @@
 import React from 'react';
-
-interface Produce {
-  id: string;
-  name: string;
-  category: string[];
-  description: string;
-  pricePerUnit: number;
-  unit: string;
-  minimumOrderQuantity: number;
-  minimumOrderUnit: string;
-  availabilityWindows: {
-    startMonth: number;
-    endMonth: number;
-  }[];
-  images: string[];
-  createdAt: string;
-}
+import { Produce } from '@/lib/api-types';
 
 interface ProductHoverCardProps {
   produce: Produce;
@@ -93,7 +77,7 @@ const ProductHoverCard: React.FC<ProductHoverCardProps> = ({ produce, className 
       <div className="text-left">
         <p className="text-sm text-gray-500 mb-1">Starting at</p>
         <p className="text-xl font-bold text-gray-900">
-          ${produce.pricePerUnit.toFixed(2)} / {produce.unit}
+          ${produce.pricePerUnit?.toFixed(2) || '0.00'} / {produce.unit || 'unit'}
         </p>
       </div>
     </div>

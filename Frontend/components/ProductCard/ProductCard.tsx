@@ -9,23 +9,7 @@ import {
 } from "@/components/ui/carousel";
 import { Calendar, DollarSign, Package } from "lucide-react";
 import { EmblaOptionsType } from "embla-carousel";
-
-interface Produce {
-  id: string;
-  name: string;
-  category: string[];
-  description: string;
-  pricePerUnit: number;
-  unit: string;
-  minimumOrderQuantity: number;
-  minimumOrderUnit: string;
-  availabilityWindows: {
-    startMonth: number;
-    endMonth: number;
-  }[];
-  images: string[];
-  createdAt: string;
-}
+import { Produce } from "@/lib/api-types";
 
 interface ProductCardProps {
   produce: Produce;
@@ -61,7 +45,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ produce, categoryIcon }) => {
   }, [api]);
 
   const formatAvailability = () => {
-    if (produce.availabilityWindows.length === 0) return "Not available";
+    if (!produce.availabilityWindows || produce.availabilityWindows.length === 0) return "Not available";
 
     return produce.availabilityWindows
       .map((window) => {
@@ -100,9 +84,25 @@ const ProductCard: React.FC<ProductCardProps> = ({ produce, categoryIcon }) => {
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
         >
-          <div className="w-full h-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
-            <span className="text-gray-500 text-sm">Product Image</span>
-          </div>
+          {produce.images && produce.images.length > 0 ? (
+            <img 
+              src={produce.images[0]} 
+              alt={produce.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent) {
+                  parent.innerHTML = `<div class="w-full h-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center"><span class="text-gray-500 text-sm">${produce.name}</span></div>`;
+                }
+              }}
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
+              <span className="text-gray-500 text-sm">Product Image</span>
+            </div>
+          )}
 
           {/* Semi-transparent overlay with product name and icon */}
           <div
@@ -141,10 +141,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ produce, categoryIcon }) => {
           <div className="text-center">
             <DollarSign className="w-8 h-8 mx-auto mb-4 text-green-600" />
             <h4 className="font-semibold text-gray-900 mb-3">Price</h4>
-            <div className="text-lg font-bold text-green-600 mb-2">
-              ${produce.pricePerUnit.toFixed(2)} / {produce.unit}
-            </div>
-            <p className="text-xs text-gray-500">per {produce.unit}</p>
+            {produce.pricePerUnit && produce.unit ? (
+              <>
+                <div className="text-lg font-bold text-green-600 mb-2">
+                  ${produce.pricePerUnit.toFixed(2)} / {produce.unit}
+                </div>
+                <p className="text-xs text-gray-500">per {produce.unit}</p>
+              </>
+            ) : (
+              <p className="text-sm text-gray-500">Price not available</p>
+            )}
           </div>
         </div>
       ),
@@ -156,10 +162,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ produce, categoryIcon }) => {
           <div className="text-center">
             <Package className="w-8 h-8 mx-auto mb-4 text-green-600" />
             <h4 className="font-semibold text-gray-900 mb-3">Min Order</h4>
-            <div className="text-lg font-bold text-gray-900 mb-1">
-              {produce.minimumOrderQuantity} {produce.minimumOrderUnit}
-            </div>
-            <p className="text-xs text-gray-500">minimum order</p>
+            {produce.minimumOrderQuantity && produce.minimumOrderUnit ? (
+              <>
+                <div className="text-lg font-bold text-gray-900 mb-1">
+                  {produce.minimumOrderQuantity} {produce.minimumOrderUnit}
+                </div>
+                <p className="text-xs text-gray-500">minimum order</p>
+              </>
+            ) : (
+              <p className="text-sm text-gray-500">No minimum order</p>
+            )}
           </div>
         </div>
       ),
