@@ -384,6 +384,79 @@ def auth_profile():
 
 """ Farm Endpoints """
 
+@app.route('/my_farms', methods=["GET"])
+@cross_origin()
+def farms():
+    try:
+        if request.method == "GET":
+            return get_my_farms()
+    except Exception as e:
+        print(e)
+        return exc.handle_error(e)
+
+
+@clerk_auth_required
+def get_my_farms():
+    """
+        Get list of all of a users farms with optional filtering
+
+        Endpoint: GET /my_farms
+
+        Query Parameters:
+            city (optional): Filter by city
+            state (optional): Filter by state
+            categories (optional): Filter by produce categories
+            page (optional): Page number for pagination (default: 1)
+            limit (optional): Items per page (default: 20)
+
+        Response (200 OK)
+    """
+    db = client.farm_details
+
+    data = request.args
+    print(f"{request.remote_addr}: Request args received, {data}")
+
+    filter = {"ownerId": ObjectId(g.user_id)}
+
+    # Set the default page and limit
+    page = 1
+    limit = 20
+
+    # Create the filter, and fill the page and limit if they have been provided
+    for key in list(data.keys()):
+        if key in ["city","state","categories"]:
+            filter[key] = data.get(key)
+        elif key == "page":
+            page = int(data.get(key))
+        elif key == "limit":
+            limit = np.clip(int(data.get(key)),1,100)
+        else:
+            print(f"    {request.remote_addr}: {key} ignored")
+    
+    # Create the pagination information
+    farm_count = int(db.farms.count_documents(filter))
+    page_count = int(np.ceil(limit/farm_count) if farm_count > 0 else 0)
+    page = int(np.clip(page,1,page_count if page_count > 0 else 1))
+    first_item = int((page-1)*limit+1)
+
+    # TODO: order by distance to current position
+    cursor = db.farms.find(filter,skip=first_item-1,limit=limit)
+    farm_list = [mongo_to_dict(farm, "farmId") for farm in cursor]
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "farms": farm_list,
+            "pagination": {
+                "currentPage": page,
+                "totalPages": page_count,
+                "totalItems": farm_count,
+                "itemsPerPage": limit
+            }
+        }
+    }), 200
+
+
 @app.route('/farms', methods=["POST", "GET"])
 @cross_origin()
 def farms():
