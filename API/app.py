@@ -825,7 +825,7 @@ def get_produce_id(produceId: str):
     print(f"{request.remote_addr}: Request args received, {data}")
 
     # Get the produce document associated with this id
-    produce = db.produce.find_one({"_id": produceId})
+    produce = db.produce.find_one({"_id": ObjectId(produceId)})
     # If no produce document was found return an error
     if produce is None:
         print(f"    {request.remote_addr}: Produce with this id does not exist, {produceId}")
@@ -851,7 +851,7 @@ def get_produce_id(produceId: str):
     return jsonify({
         "success": True,
         "data": produce_dict
-    })
+    }), 200
 
 @clerk_auth_required
 def update_produce_id(produceId: str):
@@ -957,7 +957,7 @@ def delete_produce_id(produceId: str):
     return jsonify({
         "success": True,
         "message": "Produce deleted successfully"
-    })
+    }), 201
 
 @app.route('/categories', methods=["GET"])
 def categories():
