@@ -85,6 +85,10 @@ function FarmsPageContent() {
   const observerTarget = useRef<HTMLDivElement>(null);
   const currentPageRef = useRef(1);
 
+  // Refs for sticky search bar
+  const searchBarRef = useRef<HTMLDivElement>(null);
+  const [isSticky, setIsSticky] = useState(false);
+
   // Initialize state from URL parameters
   useEffect(() => {
     const query = searchParams.get("q") || "";
@@ -248,6 +252,23 @@ function FarmsPageContent() {
     return () => observer.disconnect();
   }, [loadMore, hasNextPage, loadingMore, loading]);
 
+  // Sticky search bar scroll listener
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!searchBarRef.current) return;
+
+      const searchBarRect = searchBarRef.current.getBoundingClientRect();
+      const shouldBeSticky = searchBarRect.top <= -10; // Add 10px buffer
+
+      setIsSticky(shouldBeSticky);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Check initial position
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const handleCategoryChange = (
     category: keyof typeof categories,
     checked: boolean
@@ -291,16 +312,40 @@ function FarmsPageContent() {
         </h1>
 
         {/* Search Bar */}
-        <SearchBar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onSearch={handleSearch}
-          distanceWithin={distanceWithin}
-          onDistanceChange={setDistanceWithin}
-          categories={categories}
-          onCategoryChange={handleCategoryChange}
-          onSelectAll={handleSelectAll}
-        />
+        <div ref={searchBarRef}>
+          <SearchBar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onSearch={handleSearch}
+            distanceWithin={distanceWithin}
+            onDistanceChange={setDistanceWithin}
+            categories={categories}
+            onCategoryChange={handleCategoryChange}
+            onSelectAll={handleSelectAll}
+          />
+        </div>
+
+        {/* Sticky Search Bar */}
+        <div 
+          className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-lg transition-all duration-300 ease-in-out ${
+            isSticky 
+              ? 'translate-y-0 opacity-100' 
+              : '-translate-y-full opacity-0 pointer-events-none'
+          }`}
+        >
+          <div className="container mx-auto px-4 py-4">
+            <SearchBar
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onSearch={handleSearch}
+              distanceWithin={distanceWithin}
+              onDistanceChange={setDistanceWithin}
+              categories={categories}
+              onCategoryChange={handleCategoryChange}
+              onSelectAll={handleSelectAll}
+            />
+          </div>
+        </div>
 
         {/* Loading State */}
         {loading && (
