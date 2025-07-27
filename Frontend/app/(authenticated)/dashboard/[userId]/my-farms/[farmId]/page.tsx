@@ -31,41 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import SimpleImageUpload from "@/components/ui/simple-image-upload";
-
-interface Farm {
-  farmId: string;
-  name: string;
-  description: string;
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
-  contact_email: string;
-  contact_phone: string;
-  opening_hours: string;
-  ownerId: string;
-  createdAt: string;
-}
-
-interface Produce {
-  id: string;
-  name: string;
-  category: string[];
-  description: string;
-  pricePerUnit: number;
-  unit: string;
-  minimumOrderQuantity: number;
-  minimumOrderUnit: string;
-  availabilityWindows: {
-    startMonth: number;
-    endMonth: number;
-  }[];
-  farmId: string;
-  images: string[];
-  createdAt: string;
-}
+import { Farm, Produce } from "@/lib/api-types";
 
 export default function FarmManagement({
   params,
@@ -163,7 +129,7 @@ export default function FarmManagement({
     try {
       await api.deleteProduce(produceId);
       // Remove from local state after successful deletion
-      setFarmProduce((prev) => prev.filter((p) => p.id !== produceId));
+      setFarmProduce((prev) => prev.filter((p) => p.produceId !== produceId));
     } catch (error) {
       console.error('Error deleting produce:', error);
       alert('Failed to delete product. Please try again.');
@@ -178,7 +144,7 @@ export default function FarmManagement({
 
   const handleEditProduct = (product: Produce) => {
     router.push(
-      `/dashboard/${resolvedParams?.userId}/my-farms/${resolvedParams?.farmId}/products/${product.id}/edit`
+      `/dashboard/${resolvedParams?.userId}/my-farms/${resolvedParams?.farmId}/products/${product.produceId}/edit`
     );
   };
 
@@ -322,7 +288,7 @@ export default function FarmManagement({
                 {farm.name}
               </h1>
               <div className="inline-block bg-gray-100 px-3 py-1 rounded text-sm text-gray-700">
-                {farm.address.city} {farm.address.state}
+                {farm.address?.city} {farm.address?.state}
               </div>
             </>
           ) : (
@@ -354,7 +320,7 @@ export default function FarmManagement({
                   </Label>
                   <Input
                     id="city"
-                    value={editedFarm?.address.city || ""}
+                    value={editedFarm?.address?.city || ""}
                     onChange={(e) =>
                       handleFarmInputChange("address.city", e.target.value)
                     }
@@ -370,7 +336,7 @@ export default function FarmManagement({
                   </Label>
                   <Input
                     id="state"
-                    value={editedFarm?.address.state || ""}
+                    value={editedFarm?.address?.state || ""}
                     onChange={(e) =>
                       handleFarmInputChange("address.state", e.target.value)
                     }
@@ -490,7 +456,7 @@ export default function FarmManagement({
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {farmProduce.map((produce) => {
-                const primaryCategory = produce.category[0] || "other";
+                const primaryCategory = produce.category?.[0] || "other";
                 const categoryIcon =
                   {
                     honey: "🍯",
@@ -510,7 +476,7 @@ export default function FarmManagement({
                   }[primaryCategory] || "🌱";
 
                 return (
-                  <div key={produce.id} className="relative">
+                  <div key={produce.produceId} className="relative">
                     <ProductCard
                       produce={produce}
                       categoryIcon={categoryIcon}
@@ -526,7 +492,7 @@ export default function FarmManagement({
                         <Edit className="w-3 h-3" />
                       </Button>
                       <Button
-                        onClick={() => handleDeleteProduce(produce.id)}
+                        onClick={() => handleDeleteProduce(produce.produceId)}
                         size="sm"
                         variant="secondary"
                         className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
@@ -557,8 +523,8 @@ export default function FarmManagement({
                     <MapPin className="w-4 h-4 mt-1 text-gray-500" />
                     <div>
                       <div className="font-medium text-blue-600 underline cursor-pointer">
-                        {farm.address.street} {farm.address.state}{" "}
-                        {farm.address.zipCode}
+                        {farm.address?.street} {farm.address?.state}{" "}
+                        {farm.address?.zipCode}
                       </div>
                     </div>
                   </div>
@@ -588,7 +554,7 @@ export default function FarmManagement({
                       <MapPin className="w-4 h-4 text-gray-500" />
                       <Input
                         id="street"
-                        value={editedFarm?.address.street || ""}
+                        value={editedFarm?.address?.street || ""}
                         onChange={(e) =>
                           handleFarmInputChange(
                             "address.street",
@@ -608,7 +574,7 @@ export default function FarmManagement({
                     </Label>
                     <Input
                       id="zipCode"
-                      value={editedFarm?.address.zipCode || ""}
+                      value={editedFarm?.address?.zipCode || ""}
                       onChange={(e) =>
                         handleFarmInputChange("address.zipCode", e.target.value)
                       }
@@ -683,7 +649,9 @@ export default function FarmManagement({
                 <h3 className="text-lg font-medium text-gray-900">Map</h3>
               </div>
               <div className="w-full h-48">
-                <Map address={farm.address} className="w-full h-full rounded" />
+                {farm.address && farm.address.street && farm.address.city && farm.address.state && farm.address.zipCode && (
+                  <Map address={farm.address as {street: string; city: string; state: string; zipCode: string}} className="w-full h-full rounded" />
+                )}
               </div>
             </div>
           </div>

@@ -1,47 +1,19 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  Suspense,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SearchBar from "@/components/SearchBar/SearchBar";
 import ProductHoverCard from "@/components/ProductHoverCard/ProductHoverCard";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { unauthenticatedApiClient } from "@/lib/api-client";
-
-interface Farm {
-  farmId: string;
-  name: string;
-  description: string;
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
-  contact_email: string;
-  contact_phone: string;
-  opening_hours: string;
-  produce?: Produce[];
-  ownerId: string;
-  createdAt: string;
-}
-
-interface Produce {
-  id: string;
-  name: string;
-  category: string[];
-  description: string;
-  pricePerUnit: number;
-  unit: string;
-  minimumOrderQuantity: number;
-  minimumOrderUnit: string;
-  availabilityWindows: {
-    startMonth: number;
-    endMonth: number;
-  }[];
-  images: string[];
-  createdAt: string;
-}
+import { Farm, Produce } from "@/lib/api-types";
 
 interface SearchResponse {
   success: boolean;
@@ -182,25 +154,26 @@ function FarmsPageContent() {
     try {
       const data = await fetchFarms(params);
       setSearchData(data);
-      
+
       if (params.reset) {
         setAllFarms(data.data.farms);
       } else {
-        setAllFarms(prev => [...prev, ...data.data.farms]);
+        setAllFarms((prev) => [...prev, ...data.data.farms]);
       }
-      
+
       // Update pagination state
       currentPageRef.current = data.data.pagination.currentPage;
       // Stop loading more if we've reached the last page OR if the returned farms array is empty
-      const hasMorePages = data.data.pagination.currentPage < data.data.pagination.totalPages;
+      const hasMorePages =
+        data.data.pagination.currentPage < data.data.pagination.totalPages;
       const hasResults = data.data.farms.length > 0;
       setHasNextPage(hasMorePages && hasResults);
-      
     } catch (err) {
       // Show the full detailed error message for developers
-      const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
+      const errorMessage =
+        err instanceof Error ? err.message : "Unknown error occurred";
       setError(errorMessage);
-      
+
       if (params.reset) {
         setSearchData(null);
         setAllFarms([]);
@@ -256,7 +229,12 @@ function FarmsPageContent() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !loadingMore && !loading) {
+        if (
+          entries[0].isIntersecting &&
+          hasNextPage &&
+          !loadingMore &&
+          !loading
+        ) {
           loadMore();
         }
       },
@@ -336,12 +314,17 @@ function FarmsPageContent() {
         {error && (
           <div className="mt-8 py-12">
             <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-red-800 mb-4">Error Details</h3>
+              <h3 className="text-lg font-semibold text-red-800 mb-4">
+                Error Details
+              </h3>
               <pre className="text-sm text-red-700 whitespace-pre-wrap bg-red-100 p-4 rounded border overflow-auto max-h-96">
                 {error}
               </pre>
               <div className="mt-4 text-center">
-                <Button onClick={() => handleSearch()} className="bg-red-600 hover:bg-red-700 text-white">
+                <Button
+                  onClick={() => handleSearch()}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
                   Try Again
                 </Button>
               </div>
@@ -367,12 +350,12 @@ function FarmsPageContent() {
                       {farm.name}
                     </h2>
                     <p className="text-gray-600 mb-3">
-                      {farm.address.city} {farm.address.state}
+                      {farm.address?.city} {farm.address?.state}
                     </p>
                     <Link href={`/farms/${farm.farmId}`}>
                       <Button
                         variant="outline"
-                        className="bg-black text-white hover:bg-gray-800"
+                        className=" border-primary text-primary hover:bg-primary/10 hover:text-primary"
                       >
                         View More
                       </Button>
@@ -383,7 +366,7 @@ function FarmsPageContent() {
                   <div className="flex-shrink-0">
                     <div className="flex flex-wrap gap-2 justify-end">
                       {farm.produce?.map((produce) => (
-                        <div key={produce.id} className="relative">
+                        <div key={produce.produceId} className="relative">
                           <Button
                             variant="outline"
                             size="sm"
@@ -402,7 +385,7 @@ function FarmsPageContent() {
 
                           {/* Hover Card */}
                           {hoveredFarm === farm.farmId &&
-                            hoveredProduce?.id === produce.id && (
+                            hoveredProduce?.produceId === produce.produceId && (
                               <div className="absolute top-full right-0 mt-2 z-10">
                                 <ProductHoverCard produce={produce} />
                               </div>
@@ -427,10 +410,12 @@ function FarmsPageContent() {
             {loadingMore ? (
               <div className="text-center">
                 <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
-                <p className="mt-2 text-sm text-gray-600">Loading more farms...</p>
+                <p className="mt-2 text-sm text-gray-600">
+                  Loading more farms...
+                </p>
               </div>
             ) : (
-              <Button 
+              <Button
                 onClick={loadMore}
                 variant="outline"
                 className="px-8 py-2"
@@ -445,7 +430,8 @@ function FarmsPageContent() {
         {!loading && !error && !hasNextPage && farms.length > 0 && (
           <div className="mt-8 text-center py-8">
             <p className="text-sm text-gray-600">
-              You&apos;ve reached the end! Showing all {pagination.totalItems} farms.
+              You&apos;ve reached the end! Showing all {pagination.totalItems}{" "}
+              farms.
             </p>
           </div>
         )}
@@ -463,16 +449,18 @@ function FarmsPageContent() {
 
 export default function FarmsPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen">
-        <div className="container mx-auto px-4 py-6">
-          <div className="mt-8 text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-            <p className="mt-2 text-gray-600">Loading farms...</p>
+    <Suspense
+      fallback={
+        <div className="min-h-screen">
+          <div className="container mx-auto px-4 py-6">
+            <div className="mt-8 text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              <p className="mt-2 text-gray-600">Loading farms...</p>
+            </div>
           </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <FarmsPageContent />
     </Suspense>
   );

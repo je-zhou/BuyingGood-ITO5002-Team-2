@@ -38,7 +38,7 @@ export default function Navbar() {
   }, [pathname]);
 
   return (
-    <nav className="flex justify-between items-center p-4 w-full">
+    <nav className="flex justify-between items-center p-4 w-full border-b border-gray-200">
       {/* Icon and Brand */}
       <Link href="/" className="flex items-center gap-2 cursor-pointer">
         <Image src="/logo.png" alt="logo" width={32} height={32} />
@@ -58,6 +58,12 @@ export default function Navbar() {
           className="hover:text-primary cursor-pointer"
         >
           Our Story
+        </button>
+        <button
+          onClick={() => scrollToSection("data-viz")}
+          className="hover:text-primary cursor-pointer"
+        >
+          The Problem in Numbers
         </button>
         <button
           onClick={() => scrollToSection("our-solution")}

@@ -10,24 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Save } from "lucide-react";
 import SimpleImageUpload from "@/components/ui/simple-image-upload";
-
-interface Produce {
-  id: string;
-  name: string;
-  category: string[];
-  description: string;
-  pricePerUnit: number;
-  unit: string;
-  minimumOrderQuantity: number;
-  minimumOrderUnit: string;
-  availabilityWindows: {
-    startMonth: number;
-    endMonth: number;
-  }[];
-  farmId: string;
-  images: string[];
-  createdAt: string;
-}
+import { Produce } from "@/lib/api-types";
 
 interface ProductCreateModalProps {
   isOpen: boolean;
@@ -109,15 +92,15 @@ export default function ProductCreateModal({
     if (editingProduct) {
       return {
         name: editingProduct.name,
-        category: editingProduct.category,
-        description: editingProduct.description,
-        pricePerUnit: editingProduct.pricePerUnit,
-        unit: editingProduct.unit,
-        minimumOrderQuantity: editingProduct.minimumOrderQuantity,
-        minimumOrderUnit: editingProduct.minimumOrderUnit,
-        availabilityStartMonth: editingProduct.availabilityWindows[0]?.startMonth || 1,
-        availabilityEndMonth: editingProduct.availabilityWindows[0]?.endMonth || 12,
-        images: editingProduct.images
+        category: editingProduct.category || [],
+        description: editingProduct.description || "",
+        pricePerUnit: editingProduct.pricePerUnit || 0,
+        unit: editingProduct.unit || "",
+        minimumOrderQuantity: editingProduct.minimumOrderQuantity || 1,
+        minimumOrderUnit: editingProduct.minimumOrderUnit || "",
+        availabilityStartMonth: editingProduct.availabilityWindows?.[0]?.startMonth || 1,
+        availabilityEndMonth: editingProduct.availabilityWindows?.[0]?.endMonth || 12,
+        images: editingProduct.images || []
       };
     }
     return {
