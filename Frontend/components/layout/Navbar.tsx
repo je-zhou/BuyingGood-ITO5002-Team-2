@@ -38,7 +38,7 @@ export default function Navbar() {
   }, [pathname]);
 
   return (
-    <nav className="flex justify-between items-center p-4 w-full">
+    <nav className="flex justify-between items-center p-4 w-full shadow">
       {/* Icon and Brand */}
       <Link href="/" className="flex items-center gap-2 cursor-pointer">
         <Image src="/logo.png" alt="logo" width={32} height={32} />
