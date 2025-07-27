@@ -24,8 +24,8 @@ export default function LandingHero() {
 
         <div className="flex flex-col items-center gap-2 pt-8">
           <p className="text-sm text-gray-500">
-            Are you a farmer?
-            <Link href="/dashboard" className="text-primary">
+            Are you a farmer?{" "}
+            <Link href="/sign-up" className="text-primary">
               Register your farm
             </Link>
           </p>
