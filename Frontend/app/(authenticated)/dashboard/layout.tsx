@@ -20,9 +20,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white flex flex-col">
       <DashboardNavbar />
-      {children}
+      <main className="flex-grow w-full max-w-screen-xl mx-auto px-4">
+        {children}
+      </main>
     </div>
   );
 }

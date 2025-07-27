@@ -304,8 +304,8 @@ function FarmsPageContent() {
 
   return (
     <div className="min-h-screen">
-      <div className="container mx-auto px-4 py-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">
+      <div className="mx-auto px-4 py-6">
+        <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">
           {loading
             ? "Searching..."
             : `${pagination.totalItems} Farms Found Near You`}
@@ -333,7 +333,7 @@ function FarmsPageContent() {
               : '-translate-y-full opacity-0 pointer-events-none'
           }`}
         >
-          <div className="container mx-auto px-4 py-4">
+          <div className="mx-auto px-4 py-4 max-w-screen-xl">
             <SearchBar
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
@@ -379,68 +379,71 @@ function FarmsPageContent() {
 
         {/* Farm Results */}
         {!loading && !error && (
-          <div className="mt-8 space-y-6">
+          <div className="mt-6 md:mt-8 space-y-4 md:space-y-6">
             {farms.map((farm) => (
               <div
                 key={farm.farmId}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+                className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6"
               >
-                <div className="flex gap-6">
+                <div className="flex flex-col md:flex-row gap-4 md:gap-6">
                   {/* Farm Image Placeholder */}
-                  <div className="w-32 h-32 bg-gray-100 rounded-lg flex-shrink-0"></div>
+                  <div className="w-full md:w-32 h-32 bg-gray-100 rounded-lg flex-shrink-0"></div>
 
-                  {/* Farm Info */}
-                  <div className="flex-grow">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-1">
-                      {farm.name}
-                    </h2>
-                    <p className="text-gray-600 mb-3">
-                      {farm.address?.city} {farm.address?.state}
-                    </p>
-                    <Link href={`/farms/${farm.farmId}`}>
-                      <Button
-                        variant="outline"
-                        className=" border-primary text-primary hover:bg-primary/10 hover:text-primary"
-                      >
-                        View More
-                      </Button>
-                    </Link>
-                  </div>
+                  <div className="flex-grow flex flex-col md:flex-row gap-4">
+                    {/* Farm Info */}
+                    <div className="flex-grow">
+                      <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-1">
+                        {farm.name}
+                      </h2>
+                      <p className="text-sm md:text-base text-gray-600 mb-3">
+                        {farm.address?.city} {farm.address?.state}
+                      </p>
+                      <Link href={`/farms/${farm.farmId}`}>
+                        <Button
+                          variant="outline"
+                          className="border-primary text-primary hover:bg-primary/10 hover:text-primary w-full md:w-auto"
+                          size="sm"
+                        >
+                          View More
+                        </Button>
+                      </Link>
+                    </div>
 
-                  {/* Produce Buttons */}
-                  <div className="flex-shrink-0">
-                    <div className="flex flex-wrap gap-2 justify-end">
-                      {farm.produce?.map((produce) => (
-                        <div key={produce.produceId} className="relative">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="min-w-16"
-                            onMouseEnter={() => {
-                              setHoveredFarm(farm.farmId);
-                              setHoveredProduce(produce);
-                            }}
-                            onMouseLeave={() => {
-                              setHoveredFarm(null);
-                              setHoveredProduce(null);
-                            }}
-                          >
-                            {produce.name}
-                          </Button>
+                    {/* Produce Buttons */}
+                    <div className="md:flex-shrink-0">
+                      <div className="flex flex-wrap gap-2 justify-start md:justify-end">
+                        {farm.produce?.map((produce) => (
+                          <div key={produce.produceId} className="relative">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="min-w-12 text-xs md:text-sm"
+                              onMouseEnter={() => {
+                                setHoveredFarm(farm.farmId);
+                                setHoveredProduce(produce);
+                              }}
+                              onMouseLeave={() => {
+                                setHoveredFarm(null);
+                                setHoveredProduce(null);
+                              }}
+                            >
+                              {produce.name}
+                            </Button>
 
-                          {/* Hover Card */}
-                          {hoveredFarm === farm.farmId &&
-                            hoveredProduce?.produceId === produce.produceId && (
-                              <div className="absolute top-full right-0 mt-2 z-10">
-                                <ProductHoverCard produce={produce} />
-                              </div>
-                            )}
-                        </div>
-                      )) || (
-                        <div className="text-sm text-gray-500 italic">
-                          No produce listed
-                        </div>
-                      )}
+                            {/* Hover Card */}
+                            {hoveredFarm === farm.farmId &&
+                              hoveredProduce?.produceId === produce.produceId && (
+                                <div className="absolute top-full right-0 mt-2 z-10">
+                                  <ProductHoverCard produce={produce} />
+                                </div>
+                              )}
+                          </div>
+                        )) || (
+                          <div className="text-xs md:text-sm text-gray-500 italic">
+                            No produce listed
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -497,7 +500,7 @@ export default function FarmsPage() {
     <Suspense
       fallback={
         <div className="min-h-screen">
-          <div className="container mx-auto px-4 py-6">
+          <div className="mx-auto px-4 py-6">
             <div className="mt-8 text-center py-12">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
               <p className="mt-2 text-gray-600">Loading farms...</p>

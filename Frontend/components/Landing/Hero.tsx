@@ -22,26 +22,26 @@ export default function LandingHero() {
   };
 
   return (
-    <div className="flex flex-col h-screen pb-32 justify-center items-center">
-      <div className="flex flex-col items-center gap-4">
-        <h1 className="text-4xl font-bold">
+    <div className="flex flex-col min-h-screen pb-16 md:pb-32 justify-center items-center px-4">
+      <div className="flex flex-col items-center gap-4 w-full max-w-4xl">
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center">
           Welcome to{" "}
           <span className="text-black/70">
             Buying<span className="text-primary">Good</span>
           </span>
         </h1>
-        <p className="text-gray-500 max-w-2xl text-center">
+        <p className="text-gray-500 max-w-2xl text-center text-sm md:text-base">
           We are a non-for profit initiative that helps connect you with local
           farmers and challenge the wasteful logistical practices of large food
           distributors.
         </p>
 
-        <div className="pt-8 w-full">
+        <div className="pt-4 md:pt-8 w-full">
           <SearchBar />
         </div>
 
-        <div className="flex flex-col items-center gap-2 pt-8">
-          <p className="text-sm text-gray-500">
+        <div className="flex flex-col items-center gap-2 pt-4 md:pt-8">
+          <p className="text-xs md:text-sm text-gray-500 text-center">
             Are you a farmer?{" "}
             <button
               onClick={handleRegisterClick}
