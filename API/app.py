@@ -526,7 +526,7 @@ def get_farms():
 
     # Create the filter, and fill the page and limit if they have been provided
     for key in list(data.keys()):
-        if key in ["city","state","categories"]:
+        if key in ["city","state"]: # categories not implemented
             filter[key] = data.get(key)
         elif key == "page":
             page = int(data.get(key))
@@ -534,7 +534,20 @@ def get_farms():
             limit = np.clip(int(data.get(key)),1,100)
         else:
             print(f"    {request.remote_addr}: {key} ignored")
-    
+
+    # A quick implementation of categories
+    if "categories" in data.keys():
+        categories = data.get("categories")
+        farms_within_categories = []
+        if isinstance(categories,list):
+            produce_within_categories = db.produce.find({"category": { "$in": categories }})
+
+            produce_within_categories = [mongo_to_dict(produce, "produceId") for produce in produce_within_categories]
+
+            farms_within_categories = [produce["farmId"] for produce in produce_within_categories]
+        filter["_id"] = {"$in": farms_within_categories}
+
+
     # Create the pagination information
     farm_count = int(db.farms.count_documents(filter))
     page_count = int(np.ceil(limit/farm_count) if farm_count > 0 else 0)
