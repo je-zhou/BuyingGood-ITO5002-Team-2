@@ -16,15 +16,18 @@ const ProductHoverCard: React.FC<ProductHoverCardProps> = ({ produce, className 
     }
     
     return produce.availabilityWindows.some(window => {
-      if (window.startMonth === 0 && window.endMonth === 11) {
+      const startMonth = Math.max(0, Math.min(11, window.startMonth));
+      const endMonth = Math.max(0, Math.min(11, window.endMonth));
+      
+      if (startMonth === 0 && endMonth === 11) {
         // Year-round availability (0-11 means all months)
         return true;
-      } else if (window.startMonth <= window.endMonth) {
+      } else if (startMonth <= endMonth) {
         // Same year span
-        return monthIndex >= window.startMonth && monthIndex <= window.endMonth;
+        return monthIndex >= startMonth && monthIndex <= endMonth;
       } else {
         // Cross-year span (e.g., Dec to Mar)
-        return monthIndex >= window.startMonth || monthIndex <= window.endMonth;
+        return monthIndex >= startMonth || monthIndex <= endMonth;
       }
     });
   };

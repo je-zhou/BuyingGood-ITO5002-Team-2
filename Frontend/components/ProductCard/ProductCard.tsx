@@ -58,16 +58,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ produce, categoryIcon }) => {
 
     return produce.availabilityWindows
       .map((window) => {
-        if (window.startMonth === window.endMonth) {
-          return `${monthNames[window.startMonth]}`;
-        } else if (window.startMonth <= window.endMonth) {
-          return `${monthNames[window.startMonth]} - ${
-            monthNames[window.endMonth]
-          }`;
+        const startMonth = Math.max(0, Math.min(11, window.startMonth));
+        const endMonth = Math.max(0, Math.min(11, window.endMonth));
+        
+        if (startMonth === endMonth) {
+          return `${monthNames[startMonth]}`;
+        } else if (startMonth <= endMonth) {
+          return `${monthNames[startMonth]} - ${monthNames[endMonth]}`;
         } else {
-          return `${monthNames[window.startMonth]} - ${
-            monthNames[window.endMonth]
-          } (cross-year)`;
+          return `${monthNames[startMonth]} - ${monthNames[endMonth]} (cross-year)`;
         }
       })
       .join(", ");
