@@ -30,9 +30,12 @@ export default function SimpleImageUpload({
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleUploadSuccess = (result: any) => {
-    const newUrl = result.info.secure_url;
-    onChange([...value, newUrl]);
-    setUploading(false);
+    if (result.event === 'success') {
+      const newUrl = result.info.secure_url;
+      onChange([...value, newUrl]);
+    } else if (result.event === 'queues-end') {
+      setUploading(false);
+    }
   };
 
   const handleUploadError = () => {
@@ -99,6 +102,8 @@ export default function SimpleImageUpload({
             uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
             options={{
               folder: folder,
+              multiple: true,
+              maxFiles: maxFiles - value.length,
               styles: {
                 palette: {
                   window: "#FFFFFF",
