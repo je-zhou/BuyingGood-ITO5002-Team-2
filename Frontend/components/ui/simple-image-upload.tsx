@@ -4,7 +4,7 @@ import { CldUploadWidget } from 'next-cloudinary';
 import { Button } from '@/components/ui/button';
 import { Upload, X, Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface SimpleImageUploadProps {
   value: string[];
@@ -23,6 +23,12 @@ export default function SimpleImageUpload({
 }: SimpleImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
+  const currentImagesRef = useRef<string[]>(value);
+
+  // Keep ref in sync with prop value
+  useEffect(() => {
+    currentImagesRef.current = value;
+  }, [value]);
 
   const handleUploadStart = () => {
     setUploading(true);
@@ -30,11 +36,33 @@ export default function SimpleImageUpload({
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleUploadSuccess = (result: any) => {
-    if (result.event === 'success') {
+    if (result.event === 'success' && result.info) {
       const newUrl = result.info.secure_url;
-      onChange([...value, newUrl]);
-    } else if (result.event === 'queues-end') {
-      setUploading(false);
+      console.log('Adding URL:', newUrl);
+      console.log('Current images before update:', currentImagesRef.current);
+      
+      // Use ref to get current state and avoid stale closure
+      const updatedImages = [...currentImagesRef.current, newUrl];
+      console.log('Updated images array:', updatedImages);
+      
+      // Update ref immediately for next callback
+      currentImagesRef.current = updatedImages;
+      
+      // Call onChange with new array
+      onChange(updatedImages);
+    }
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleQueuesEnd = (result: any) => {
+    console.log('Queues end result:', result);
+    setUploading(false);
+    
+    // Check if queues end provides the complete results
+    if (result && result.info && Array.isArray(result.info)) {
+      const newUrls = result.info.map((file: any) => file.secure_url);
+      console.log('Queues end - Adding URLs:', newUrls);
+      onChange([...value, ...newUrls]);
     }
   };
 
@@ -103,7 +131,8 @@ export default function SimpleImageUpload({
             options={{
               folder: folder,
               multiple: true,
-              maxFiles: maxFiles - value.length,
+              maxFiles: Math.max(1, maxFiles - value.length),
+              sources: ['local', 'url', 'camera'],
               styles: {
                 palette: {
                   window: "#FFFFFF",
@@ -127,6 +156,7 @@ export default function SimpleImageUpload({
             }}
             onOpen={handleUploadStart}
             onSuccess={handleUploadSuccess}
+            onQueuesEnd={handleQueuesEnd}
             onError={handleUploadError}
             onClose={handleUploadClose}
           >
