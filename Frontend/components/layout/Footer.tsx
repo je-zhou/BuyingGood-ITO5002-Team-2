@@ -22,7 +22,7 @@ export default function Footer() {
 
   return (
     <div className="w-full bg-gray-100 p-4 md:p-8 flex flex-col justify-between items-center gap-4">
-      <div className="w-full max-w-screen-xl mx-auto flex flex-col items-center gap-4">
+      <div className="w-full max-w-screen-2xl mx-auto flex flex-col items-center gap-4">
         {/* NavLinks */}
         <div className="flex justify-center items-center">
           <div className="flex flex-wrap justify-center items-center gap-2 md:gap-4 text-sm md:text-base">

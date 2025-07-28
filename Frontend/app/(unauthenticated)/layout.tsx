@@ -10,7 +10,7 @@ export default function UnautenticatedLayout({
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-grow w-full max-w-screen-xl mx-auto px-4">
+      <main className="flex-grow w-full max-w-screen-2xl mx-auto px-4">
         {children}
       </main>
       <Footer />

@@ -22,7 +22,7 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <DashboardNavbar />
-      <main className="flex-grow w-full max-w-screen-xl mx-auto px-4">
+      <main className="flex-grow w-full max-w-screen-2xl mx-auto px-4">
         {children}
       </main>
     </div>
