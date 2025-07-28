@@ -168,7 +168,7 @@ export default function SearchBar({
               }
             }}
           />
-          <label className="relative w-full">
+          <label className="relative w-fit">
             <Globe2 className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 stroke-1" />
             <Input
               type="text"
@@ -180,7 +180,10 @@ export default function SearchBar({
           </label>
         </div>
 
-        <Button className="h-10 md:h-12 cursor-pointer w-full md:w-auto px-3 md:px-4 text-sm md:text-base" onClick={handleSearch}>
+        <Button
+          className="h-10 md:h-12 cursor-pointer w-full md:w-auto px-3 md:px-4 text-sm md:text-base"
+          onClick={handleSearch}
+        >
           <span className="hidden md:inline">Find Local Farmers</span>
           <span className="md:hidden">Search</span>
         </Button>

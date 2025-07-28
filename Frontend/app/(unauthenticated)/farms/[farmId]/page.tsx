@@ -31,6 +31,15 @@ import { unauthenticatedApiClient } from "@/lib/api-client";
 import { Farm } from "@/lib/api-types";
 import Image from "next/image";
 
+// Helper function to convert relative image paths to full URLs
+const getImageUrl = (imagePath: string): string => {
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    return imagePath; // Already a full URL
+  }
+  // Local images in /public folder
+  return `/${imagePath}`;
+};
+
 // Contact form schema
 const contactFormSchema = z.object({
   name: z.string().min(2, {
@@ -103,7 +112,7 @@ export default function FarmDetailPage({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
           <p className="mt-2 text-gray-600">Loading farm details...</p>
@@ -114,7 +123,7 @@ export default function FarmDetailPage({
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 mb-4">Error: {error}</p>
           <Button onClick={() => router.back()}>Go Back</Button>
@@ -182,13 +191,13 @@ export default function FarmDetailPage({
                       <div className="p-1">
                         <div className="aspect-square border border-gray-300 rounded-lg overflow-hidden bg-gray-50 relative">
                           <Image
-                            src={item.image}
+                            src={getImageUrl(item.image)}
                             alt={
                               item.type === "farm"
                                 ? `${item.name} farm`
                                 : `${item.produceName} from ${farm.name}`
                             }
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover "
                             fill
                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                             onError={(e) => {

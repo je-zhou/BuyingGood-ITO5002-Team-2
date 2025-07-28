@@ -8,7 +8,7 @@ import DataViz from "./DataViz";
 
 export default function Landing() {
   return (
-    <div className="w-full flex flex-col min-h-screen">
+    <div className="w-full flex flex-col min-h-screen bg-white">
       <div id="nearby-farms">
         <LandingHero />
       </div>

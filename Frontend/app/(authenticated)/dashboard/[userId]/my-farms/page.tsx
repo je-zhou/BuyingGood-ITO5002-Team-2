@@ -85,7 +85,7 @@ function FarmTile({ farm, userId }: { farm: Farm; userId?: string }) {
         <p className="capitalize text-sm text-gray-500">Farm Registry</p>
         <p className="text-sm line-clamp-2">{farm.description}</p>
       </div>
-      <div className="px-4 py-3 rounded-b border-t bg-gray-50">
+      <div className="px-4 py-3 rounded-b border-t bg-white">
         <p className="text-left text-xs font-semibold text-gray-600">
           {farm.farmId}
         </p>

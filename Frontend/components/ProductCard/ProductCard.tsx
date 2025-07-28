@@ -11,6 +11,15 @@ import { Calendar, DollarSign, Package } from "lucide-react";
 import { EmblaOptionsType } from "embla-carousel";
 import { Produce } from "@/lib/api-types";
 
+// Helper function to convert relative image paths to full URLs
+const getImageUrl = (imagePath: string): string => {
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath; // Already a full URL
+  }
+  // Local images in /public folder
+  return `/${imagePath}`;
+};
+
 interface ProductCardProps {
   produce: Produce;
   categoryIcon: string;
@@ -75,34 +84,64 @@ const ProductCard: React.FC<ProductCardProps> = ({ produce, categoryIcon }) => {
     }
   };
 
-  const slides = [
-    {
-      id: "image",
+  // Create image slides for all product images
+  const imageSlides = produce.images && produce.images.length > 0 ? 
+    produce.images.map((image, index) => ({
+      id: `image-${index}`,
       content: (
         <div
           className="aspect-square bg-gray-100 relative overflow-hidden cursor-pointer"
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
         >
-          {produce.images && produce.images.length > 0 ? (
-            <img 
-              src={produce.images[0]} 
-              alt={produce.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                const parent = target.parentElement;
-                if (parent) {
-                  parent.innerHTML = `<div class="w-full h-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center"><span class="text-gray-500 text-sm">${produce.name}</span></div>`;
-                }
-              }}
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
-              <span className="text-gray-500 text-sm">Product Image</span>
+          <img 
+            src={getImageUrl(image)} 
+            alt={`${produce.name} - Image ${index + 1}`}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const parent = target.parentElement;
+              if (parent) {
+                parent.innerHTML = `<div class="w-full h-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center"><span class="text-gray-500 text-sm">${produce.name}</span></div>`;
+              }
+            }}
+          />
+
+          {/* Semi-transparent overlay with product name and icon */}
+          <div
+            className={`absolute inset-0 bg-black/20 transition-opacity duration-300 flex flex-col items-center justify-center text-white p-4 ${
+              isHovering
+                ? "bg-opacity-0 opacity-0"
+                : "bg-opacity-20 opacity-100"
+            }`}
+          >
+            <div className="text-3xl mb-2">{categoryIcon}</div>
+            <h3 className="text-lg font-semibold text-center">
+              {produce.name}
+            </h3>
+          </div>
+
+          {/* Image counter for multiple images */}
+          {produce.images && produce.images.length > 1 && (
+            <div className="absolute top-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+              {index + 1}/{produce.images.length}
             </div>
           )}
+        </div>
+      ),
+    })) : 
+    [{
+      id: "no-image",
+      content: (
+        <div
+          className="aspect-square bg-gray-100 relative overflow-hidden cursor-pointer"
+          onMouseEnter={() => setIsHovering(true)}
+          onMouseLeave={() => setIsHovering(false)}
+        >
+          <div className="w-full h-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
+            <span className="text-gray-500 text-sm">Product Image</span>
+          </div>
 
           {/* Semi-transparent overlay with product name and icon */}
           <div
@@ -119,7 +158,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ produce, categoryIcon }) => {
           </div>
         </div>
       ),
-    },
+    }];
+
+  const slides = [
+    ...imageSlides,
     {
       id: "availability",
       content: (
