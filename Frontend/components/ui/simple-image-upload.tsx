@@ -53,17 +53,9 @@ export default function SimpleImageUpload({
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleQueuesEnd = (result: any) => {
-    console.log('Queues end result:', result);
+  const handleQueuesEnd = () => {
+    console.log('All uploads complete');
     setUploading(false);
-    
-    // Check if queues end provides the complete results
-    if (result && result.info && Array.isArray(result.info)) {
-      const newUrls = result.info.map((file: any) => file.secure_url);
-      console.log('Queues end - Adding URLs:', newUrls);
-      onChange([...value, ...newUrls]);
-    }
   };
 
   const handleUploadError = () => {
