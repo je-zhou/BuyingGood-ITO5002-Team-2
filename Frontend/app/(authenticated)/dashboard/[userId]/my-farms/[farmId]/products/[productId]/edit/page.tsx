@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Save, ArrowLeft, Plus, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import SimpleImageUpload from "@/components/ui/simple-image-upload";
@@ -62,7 +68,7 @@ const categories = [
   { value: "livestock", label: "Livestock" },
   { value: "seafood", label: "Seafood" },
   { value: "forestry", label: "Forestry" },
-  { value: "other", label: "Other" }
+  { value: "other", label: "Other" },
 ];
 
 const units = [
@@ -75,7 +81,7 @@ const units = [
   { value: "bushel", label: "Bushel" },
   { value: "crate", label: "Crate" },
   { value: "bag", label: "Bag" },
-  { value: "box", label: "Box" }
+  { value: "box", label: "Box" },
 ];
 
 const months = [
@@ -90,13 +96,21 @@ const months = [
   { value: 9, label: "September" },
   { value: 10, label: "October" },
   { value: 11, label: "November" },
-  { value: 12, label: "December" }
+  { value: 12, label: "December" },
 ];
 
-export default function EditProductPage({ params }: { params: Promise<{ userId: string; farmId: string; productId: string }> }) {
+export default function EditProductPage({
+  params,
+}: {
+  params: Promise<{ userId: string; farmId: string; productId: string }>;
+}) {
   const router = useRouter();
   const api = useApiClient();
-  const [resolvedParams, setResolvedParams] = useState<{ userId: string; farmId: string; productId: string } | null>(null);
+  const [resolvedParams, setResolvedParams] = useState<{
+    userId: string;
+    farmId: string;
+    productId: string;
+  } | null>(null);
   const [product, setProduct] = useState<Produce | null>(null);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState<EditProductData>({
@@ -107,8 +121,10 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
     unit: "",
     minimumOrderQuantity: 1,
     minimumOrderUnit: "",
-    availabilityWindows: [{ id: crypto.randomUUID(), startMonth: 1, endMonth: 12 }],
-    images: []
+    availabilityWindows: [
+      { id: crypto.randomUUID(), startMonth: 1, endMonth: 12 },
+    ],
+    images: [],
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -119,10 +135,10 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
 
   const fetchProduct = React.useCallback(async () => {
     if (!resolvedParams) return;
-    
+
     try {
       const data = await api.getProduceById(resolvedParams.productId);
-      
+
       if (data.success) {
         const product = data.data;
         setProduct(product);
@@ -134,16 +150,18 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
           unit: product.unit,
           minimumOrderQuantity: product.minimumOrderQuantity,
           minimumOrderUnit: product.minimumOrderUnit,
-          availabilityWindows: product.availabilityWindows.map((window: { startMonth: number; endMonth: number }) => ({
-            id: crypto.randomUUID(),
-            startMonth: window.startMonth,
-            endMonth: window.endMonth
-          })),
-          images: product.images
+          availabilityWindows: product.availabilityWindows.map(
+            (window: { startMonth: number; endMonth: number }) => ({
+              id: crypto.randomUUID(),
+              startMonth: window.startMonth,
+              endMonth: window.endMonth,
+            })
+          ),
+          images: product.images,
         });
       }
     } catch (error) {
-      console.error('Error fetching product:', error);
+      console.error("Error fetching product:", error);
     } finally {
       setLoading(false);
     }
@@ -155,66 +173,75 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
     }
   }, [resolvedParams, fetchProduct]);
 
-  const handleInputChange = (field: string, value: string | number | string[] | AvailabilityWindow[]) => {
-    setFormData(prev => ({
+  const handleInputChange = (
+    field: string,
+    value: string | number | string[] | AvailabilityWindow[]
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
-    
+
     if (errors[field]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [field]: ''
+        [field]: "",
       }));
     }
   };
 
   const handleCategoryChange = (categoryValue: string) => {
-    setFormData(prev => {
+    setFormData((prev) => {
       const currentCategories = prev.category;
       if (currentCategories.includes(categoryValue)) {
         // Remove category if already selected
         return {
           ...prev,
-          category: currentCategories.filter(cat => cat !== categoryValue)
+          category: currentCategories.filter((cat) => cat !== categoryValue),
         };
       } else {
         // Add category if not selected
         return {
           ...prev,
-          category: [...currentCategories, categoryValue]
+          category: [...currentCategories, categoryValue],
         };
       }
     });
 
     if (errors.category) {
-      setErrors(prev => ({ ...prev, category: '' }));
+      setErrors((prev) => ({ ...prev, category: "" }));
     }
   };
 
   const addAvailabilityWindow = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       availabilityWindows: [
         ...prev.availabilityWindows,
-        { id: crypto.randomUUID(), startMonth: 1, endMonth: 12 }
-      ]
+        { id: crypto.randomUUID(), startMonth: 1, endMonth: 12 },
+      ],
     }));
   };
 
   const removeAvailabilityWindow = (id: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      availabilityWindows: prev.availabilityWindows.filter(window => window.id !== id)
+      availabilityWindows: prev.availabilityWindows.filter(
+        (window) => window.id !== id
+      ),
     }));
   };
 
-  const updateAvailabilityWindow = (id: string, field: 'startMonth' | 'endMonth', value: number) => {
-    setFormData(prev => ({
+  const updateAvailabilityWindow = (
+    id: string,
+    field: "startMonth" | "endMonth",
+    value: number
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      availabilityWindows: prev.availabilityWindows.map(window =>
+      availabilityWindows: prev.availabilityWindows.map((window) =>
         window.id === id ? { ...window, [field]: value } : window
-      )
+      ),
     }));
   };
 
@@ -233,7 +260,10 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
 
     if (!formData.description.trim()) {
       newErrors.description = "Product description is required";
-    } else if (formData.description.length < 50 || formData.description.length > 1000) {
+    } else if (
+      formData.description.length < 50 ||
+      formData.description.length > 1000
+    ) {
       newErrors.description = "Description must be between 50-1000 characters";
     }
 
@@ -250,16 +280,19 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
     }
 
     if (formData.minimumOrderQuantity <= 0) {
-      newErrors.minimumOrderQuantity = "Minimum order quantity must be greater than 0";
+      newErrors.minimumOrderQuantity =
+        "Minimum order quantity must be greater than 0";
     }
 
     // Validate availability windows
     if (formData.availabilityWindows.length === 0) {
-      newErrors.availabilityWindows = "At least one availability window is required";
+      newErrors.availabilityWindows =
+        "At least one availability window is required";
     } else {
       for (const window of formData.availabilityWindows) {
         if (window.startMonth > window.endMonth) {
-          newErrors.availabilityWindows = "Start month cannot be after end month in any availability window";
+          newErrors.availabilityWindows =
+            "Start month cannot be after end month in any availability window";
           break;
         }
       }
@@ -275,19 +308,23 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
     }
 
     setSaving(true);
-    
+
     try {
-      const result = await api.updateProduce(resolvedParams.productId, formData);
-      
+      const result = await api.updateProduce(
+        resolvedParams.productId,
+        formData
+      );
+
       if (result.success) {
-        router.push(`/dashboard/${resolvedParams.userId}/my-farms/${resolvedParams.farmId}`);
+        router.push(
+          `/dashboard/${resolvedParams.userId}/my-farms/${resolvedParams.farmId}`
+        );
       } else {
-        throw new Error(result.error || 'Failed to update product');
+        throw new Error(result.error || "Failed to update product");
       }
-      
     } catch (error) {
-      console.error('Error updating product:', error);
-      setErrors({ submit: 'Failed to update product. Please try again.' });
+      console.error("Error updating product:", error);
+      setErrors({ submit: "Failed to update product. Please try again." });
     } finally {
       setSaving(false);
     }
@@ -295,15 +332,17 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
 
   const handleBack = () => {
     if (resolvedParams) {
-      router.push(`/dashboard/${resolvedParams.userId}/my-farms/${resolvedParams.farmId}`);
+      router.push(
+        `/dashboard/${resolvedParams.userId}/my-farms/${resolvedParams.farmId}`
+      );
     }
   };
 
   if (!resolvedParams || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-green-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading product...</p>
         </div>
       </div>
@@ -312,7 +351,7 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600">Product not found</p>
           <Button onClick={handleBack} className="mt-4">
@@ -324,17 +363,13 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="bg-white border-b">
+      <div className="bg-white">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button
-                onClick={handleBack}
-                variant="outline"
-                size="sm"
-              >
+              <Button onClick={handleBack} variant="outline" size="sm">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Farm
               </Button>
@@ -377,24 +412,34 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
                 id="name"
                 type="text"
                 value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                className={errors.name ? 'border-red-500' : ''}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+                className={errors.name ? "border-red-500" : ""}
                 placeholder="e.g., Organic Tomatoes"
               />
-              {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
+              {errors.name && (
+                <p className="text-red-500 text-sm">{errors.name}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label>Categories * (Select all that apply)</Label>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 p-4 border rounded-lg">
                 {categories.map((category) => (
-                  <div key={category.value} className="flex items-center space-x-2">
+                  <div
+                    key={category.value}
+                    className="flex items-center space-x-2"
+                  >
                     <Checkbox
                       id={category.value}
                       checked={formData.category.includes(category.value)}
-                      onCheckedChange={() => handleCategoryChange(category.value)}
+                      onCheckedChange={() =>
+                        handleCategoryChange(category.value)
+                      }
                     />
-                    <Label htmlFor={category.value} className="text-sm cursor-pointer">
+                    <Label
+                      htmlFor={category.value}
+                      className="text-sm cursor-pointer"
+                    >
                       {category.label}
                     </Label>
                   </div>
@@ -403,9 +448,14 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
               {formData.category.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {formData.category.map((categoryValue) => {
-                    const categoryLabel = categories.find(cat => cat.value === categoryValue)?.label;
+                    const categoryLabel = categories.find(
+                      (cat) => cat.value === categoryValue
+                    )?.label;
                     return (
-                      <span key={categoryValue} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                      <span
+                        key={categoryValue}
+                        className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800"
+                      >
                         {categoryLabel}
                         <button
                           type="button"
@@ -419,7 +469,9 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
                   })}
                 </div>
               )}
-              {errors.category && <p className="text-red-500 text-sm">{errors.category}</p>}
+              {errors.category && (
+                <p className="text-red-500 text-sm">{errors.category}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -427,11 +479,17 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                className={`min-h-24 ${errors.description ? 'border-red-500' : ''}`}
+                onChange={(e) =>
+                  handleInputChange("description", e.target.value)
+                }
+                className={`min-h-24 ${
+                  errors.description ? "border-red-500" : ""
+                }`}
                 placeholder="Describe your product, how it's grown, what makes it special..."
               />
-              {errors.description && <p className="text-red-500 text-sm">{errors.description}</p>}
+              {errors.description && (
+                <p className="text-red-500 text-sm">{errors.description}</p>
+              )}
               <p className="text-gray-500 text-sm">
                 {formData.description.length}/1000 characters (minimum 50)
               </p>
@@ -445,21 +503,34 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.pricePerUnit || ''}
-                  onChange={(e) => handleInputChange('pricePerUnit', parseFloat(e.target.value) || 0)}
-                  className={errors.pricePerUnit ? 'border-red-500' : ''}
+                  value={formData.pricePerUnit || ""}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "pricePerUnit",
+                      parseFloat(e.target.value) || 0
+                    )
+                  }
+                  className={errors.pricePerUnit ? "border-red-500" : ""}
                   placeholder="0.00"
                 />
                 <p className="text-sm text-gray-500">
-                  Set to $0.00 if you want this product to appear as &quot;Available on Request&quot; to consumers
+                  Set to $0.00 if you want this product to appear as
+                  &quot;Available on Request&quot; to consumers
                 </p>
-                {errors.pricePerUnit && <p className="text-red-500 text-sm">{errors.pricePerUnit}</p>}
+                {errors.pricePerUnit && (
+                  <p className="text-red-500 text-sm">{errors.pricePerUnit}</p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="unit">Unit *</Label>
-                <Select value={formData.unit} onValueChange={(value) => handleInputChange('unit', value)}>
-                  <SelectTrigger className={errors.unit ? 'border-red-500' : ''}>
+                <Select
+                  value={formData.unit}
+                  onValueChange={(value) => handleInputChange("unit", value)}
+                >
+                  <SelectTrigger
+                    className={errors.unit ? "border-red-500" : ""}
+                  >
                     <SelectValue placeholder="Select unit" />
                   </SelectTrigger>
                   <SelectContent>
@@ -470,29 +541,51 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.unit && <p className="text-red-500 text-sm">{errors.unit}</p>}
+                {errors.unit && (
+                  <p className="text-red-500 text-sm">{errors.unit}</p>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="minimumOrderQuantity">Minimum Order Quantity *</Label>
+                <Label htmlFor="minimumOrderQuantity">
+                  Minimum Order Quantity *
+                </Label>
                 <Input
                   id="minimumOrderQuantity"
                   type="number"
                   min="1"
-                  value={formData.minimumOrderQuantity || ''}
-                  onChange={(e) => handleInputChange('minimumOrderQuantity', parseInt(e.target.value) || 1)}
-                  className={errors.minimumOrderQuantity ? 'border-red-500' : ''}
+                  value={formData.minimumOrderQuantity || ""}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "minimumOrderQuantity",
+                      parseInt(e.target.value) || 1
+                    )
+                  }
+                  className={
+                    errors.minimumOrderQuantity ? "border-red-500" : ""
+                  }
                   placeholder="1"
                 />
-                {errors.minimumOrderQuantity && <p className="text-red-500 text-sm">{errors.minimumOrderQuantity}</p>}
+                {errors.minimumOrderQuantity && (
+                  <p className="text-red-500 text-sm">
+                    {errors.minimumOrderQuantity}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="minimumOrderUnit">Minimum Order Unit *</Label>
-                <Select value={formData.minimumOrderUnit} onValueChange={(value) => handleInputChange('minimumOrderUnit', value)}>
-                  <SelectTrigger className={errors.minimumOrderUnit ? 'border-red-500' : ''}>
+                <Select
+                  value={formData.minimumOrderUnit}
+                  onValueChange={(value) =>
+                    handleInputChange("minimumOrderUnit", value)
+                  }
+                >
+                  <SelectTrigger
+                    className={errors.minimumOrderUnit ? "border-red-500" : ""}
+                  >
                     <SelectValue placeholder="Select unit" />
                   </SelectTrigger>
                   <SelectContent>
@@ -503,7 +596,11 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.minimumOrderUnit && <p className="text-red-500 text-sm">{errors.minimumOrderUnit}</p>}
+                {errors.minimumOrderUnit && (
+                  <p className="text-red-500 text-sm">
+                    {errors.minimumOrderUnit}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -511,13 +608,14 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
               <Label>Product Images</Label>
               <SimpleImageUpload
                 value={formData.images}
-                onChange={(images) => handleInputChange('images', images)}
+                onChange={(images) => handleInputChange("images", images)}
                 maxFiles={5}
-                folder="products" 
+                folder="products"
                 disabled={saving}
               />
               <p className="text-sm text-gray-500">
-                Upload images of your product to help buyers see what they&apos;re purchasing.
+                Upload images of your product to help buyers see what
+                they&apos;re purchasing.
               </p>
             </div>
 
@@ -535,10 +633,13 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
                   Add Window
                 </Button>
               </div>
-              
+
               <div className="space-y-3">
                 {formData.availabilityWindows.map((window, index) => (
-                  <div key={window.id} className="p-4 border rounded-lg bg-gray-50">
+                  <div
+                    key={window.id}
+                    className="p-4 border rounded-lg bg-white"
+                  >
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-medium text-gray-700">
                         Availability Window {index + 1}
@@ -555,20 +656,29 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
                         </Button>
                       )}
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Start Month</Label>
                         <Select
                           value={window.startMonth.toString()}
-                          onValueChange={(value) => updateAvailabilityWindow(window.id, 'startMonth', parseInt(value))}
+                          onValueChange={(value) =>
+                            updateAvailabilityWindow(
+                              window.id,
+                              "startMonth",
+                              parseInt(value)
+                            )
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select start month" />
                           </SelectTrigger>
                           <SelectContent>
                             {months.map((month) => (
-                              <SelectItem key={month.value} value={month.value.toString()}>
+                              <SelectItem
+                                key={month.value}
+                                value={month.value.toString()}
+                              >
                                 {month.label}
                               </SelectItem>
                             ))}
@@ -580,14 +690,23 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
                         <Label>End Month</Label>
                         <Select
                           value={window.endMonth.toString()}
-                          onValueChange={(value) => updateAvailabilityWindow(window.id, 'endMonth', parseInt(value))}
+                          onValueChange={(value) =>
+                            updateAvailabilityWindow(
+                              window.id,
+                              "endMonth",
+                              parseInt(value)
+                            )
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select end month" />
                           </SelectTrigger>
                           <SelectContent>
                             {months.map((month) => (
-                              <SelectItem key={month.value} value={month.value.toString()}>
+                              <SelectItem
+                                key={month.value}
+                                value={month.value.toString()}
+                              >
                                 {month.label}
                               </SelectItem>
                             ))}
@@ -598,7 +717,11 @@ export default function EditProductPage({ params }: { params: Promise<{ userId: 
                   </div>
                 ))}
               </div>
-              {errors.availabilityWindows && <p className="text-red-500 text-sm">{errors.availabilityWindows}</p>}
+              {errors.availabilityWindows && (
+                <p className="text-red-500 text-sm">
+                  {errors.availabilityWindows}
+                </p>
+              )}
             </div>
           </div>
         </div>

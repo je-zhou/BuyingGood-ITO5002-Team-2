@@ -16,6 +16,15 @@ import { unauthenticatedApiClient } from "@/lib/api-client";
 import { Farm, Produce } from "@/lib/api-types";
 import Image from "next/image";
 
+// Helper function to convert relative image paths to full URLs
+const getImageUrl = (imagePath: string): string => {
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    return imagePath; // Already a full URL
+  }
+  // Local images in /public folder
+  return `/${imagePath}`;
+};
+
 interface SearchResponse {
   success: boolean;
   data: {
@@ -264,10 +273,10 @@ function FarmsPageContent() {
       setIsSticky(shouldBeSticky);
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll(); // Check initial position
 
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const handleCategoryChange = (
@@ -304,7 +313,7 @@ function FarmsPageContent() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-white">
       <div className="mx-auto px-4 py-6">
         <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">
           {loading
@@ -327,11 +336,11 @@ function FarmsPageContent() {
         </div>
 
         {/* Sticky Search Bar */}
-        <div 
+        <div
           className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-lg transition-all duration-300 ease-in-out ${
-            isSticky 
-              ? 'translate-y-0 opacity-100' 
-              : '-translate-y-full opacity-0 pointer-events-none'
+            isSticky
+              ? "translate-y-0 opacity-100"
+              : "-translate-y-full opacity-0 pointer-events-none"
           }`}
         >
           <div className="mx-auto px-4 py-4 max-w-screen-2xl">
@@ -388,32 +397,33 @@ function FarmsPageContent() {
               >
                 <div className="flex flex-col md:flex-row gap-4 md:gap-6">
                   {/* Farm Image */}
-                  <div className="w-full md:w-32 h-32 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden relative">
+                  <div className="w-full md:w-48 aspect-square bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden relative">
                     {farm.images && farm.images.length > 0 ? (
                       <>
                         {/* First Image */}
                         <Image
-                          src={farm.images[0]}
+                          src={getImageUrl(farm.images[0])}
                           alt={`${farm.name} farm`}
-                          width={128}
-                          height={128}
+                          width={192}
+                          height={192}
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             target.style.display = "none";
                             const parent = target.parentElement;
                             if (parent) {
-                              parent.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-100 text-gray-500 text-sm">No Image</div>';
+                              parent.innerHTML =
+                                '<div class="w-full h-full flex items-center justify-center bg-gray-100 text-gray-500 text-sm">No Image</div>';
                             }
                           }}
                         />
                         {/* Second Image (hover overlay) */}
                         {farm.images.length > 1 && (
                           <Image
-                            src={farm.images[1]}
+                            src={getImageUrl(farm.images[1])}
                             alt={`${farm.name} farm (alternate view)`}
-                            width={128}
-                            height={128}
+                            width={192}
+                            height={192}
                             className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-in-out"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
@@ -435,9 +445,21 @@ function FarmsPageContent() {
                       <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-1">
                         {farm.name}
                       </h2>
-                      <p className="text-sm md:text-base text-gray-600 mb-3">
-                        {farm.address?.city} {farm.address?.state}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-3 mb-3">
+                        <p className="text-sm md:text-base text-gray-600">
+                          {farm.address?.city} {farm.address?.state}
+                        </p>
+                        {farm.opening_hours && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            {farm.opening_hours}
+                          </span>
+                        )}
+                      </div>
+                      {farm.description && (
+                        <p className="text-sm text-gray-700 mb-12 mt-2 line-clamp-6 pr-20">
+                          {farm.description}
+                        </p>
+                      )}
                       <Link href={`/farms/${farm.farmId}`}>
                         <Button
                           variant="outline"
@@ -449,40 +471,58 @@ function FarmsPageContent() {
                       </Link>
                     </div>
 
-                    {/* Produce Buttons */}
+                    {/* Produce Tiles */}
                     <div className="md:flex-shrink-0">
-                      <div className="flex flex-wrap gap-2 justify-start md:justify-end">
-                        {farm.produce?.map((produce) => (
+                      <div className="grid grid-cols-3 grid-rows-2 gap-4 w-96 h-60">
+                        {farm.produce?.slice(0, 6).map((produce) => (
                           <div key={produce.produceId} className="relative">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="min-w-12 text-xs md:text-sm"
-                              onMouseEnter={() => {
-                                setHoveredFarm(farm.farmId);
-                                setHoveredProduce(produce);
-                              }}
-                              onMouseLeave={() => {
-                                setHoveredFarm(null);
-                                setHoveredProduce(null);
-                              }}
-                            >
-                              {produce.name}
-                            </Button>
+                            <Link href={`/farms/${farm.farmId}`}>
+                              <div
+                                className="w-28 h-28 rounded-lg overflow-hidden bg-gray-100 cursor-pointer relative group border border-gray-200 hover:border-gray-300 transition-colors shadow-sm hover:shadow-md"
+                                onMouseEnter={() => {
+                                  setHoveredFarm(farm.farmId);
+                                  setHoveredProduce(produce);
+                                }}
+                                onMouseLeave={() => {
+                                  setHoveredFarm(null);
+                                  setHoveredProduce(null);
+                                }}
+                              >
+                                {produce.images && produce.images.length > 0 ? (
+                                  <Image
+                                    src={getImageUrl(produce.images[0])}
+                                    alt={produce.name}
+                                    width={112}
+                                    height={112}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      const target =
+                                        e.target as HTMLImageElement;
+                                      target.style.display = "none";
+                                      const parent = target.parentElement;
+                                      if (parent) {
+                                        parent.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-gray-100 text-gray-500 text-sm text-center p-2">${produce.name}</div>`;
+                                      }
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-500 text-sm text-center p-2">
+                                    {produce.name}
+                                  </div>
+                                )}
+                              </div>
+                            </Link>
 
                             {/* Hover Card */}
                             {hoveredFarm === farm.farmId &&
-                              hoveredProduce?.produceId === produce.produceId && (
+                              hoveredProduce?.produceId ===
+                                produce.produceId && (
                                 <div className="absolute top-full right-0 mt-2 z-10">
                                   <ProductHoverCard produce={produce} />
                                 </div>
                               )}
                           </div>
-                        )) || (
-                          <div className="text-xs md:text-sm text-gray-500 italic">
-                            No produce listed
-                          </div>
-                        )}
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -539,7 +579,7 @@ export default function FarmsPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen">
+        <div className="min-h-screen bg-white">
           <div className="mx-auto px-4 py-6">
             <div className="mt-8 text-center py-12">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>

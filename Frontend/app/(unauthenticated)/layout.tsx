@@ -8,7 +8,7 @@ export default function UnautenticatedLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-white">
       <Navbar />
       <main className="flex-grow w-full max-w-screen-2xl mx-auto px-4">
         {children}
