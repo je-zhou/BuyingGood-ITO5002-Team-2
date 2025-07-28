@@ -334,7 +334,7 @@ function FarmsPageContent() {
               : '-translate-y-full opacity-0 pointer-events-none'
           }`}
         >
-          <div className="mx-auto px-4 py-4 max-w-screen-xl">
+          <div className="mx-auto px-4 py-4 max-w-screen-2xl">
             <SearchBar
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}

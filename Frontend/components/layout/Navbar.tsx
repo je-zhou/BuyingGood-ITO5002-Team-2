@@ -40,83 +40,85 @@ export default function Navbar() {
   }, [pathname]);
 
   return (
-    <div className="w-full max-w-screen-xl mx-auto">
-      <nav className="flex justify-between items-center p-4 w-full border-b border-gray-200">
-        {/* Icon and Brand */}
-        <Link href="/" className="flex items-center gap-2 cursor-pointer">
-          <Image src="/logo.png" alt="logo" width={32} height={32} />
-          <h1 className="text-xl md:text-2xl">
-            <span className="text-black/70">Buying</span>
-            <span className="text-primary font-bold">Good</span>
-          </h1>
-        </Link>
-
-        {/* Desktop Nav Links */}
-        <div className="hidden lg:flex items-center gap-8 xl:gap-12">
-          <Link href={"/farms"} className="hover:text-primary cursor-pointer">
-            Nearby Farms
+    <>
+      <div className="w-full border-b border-gray-200">
+        <nav className="flex justify-between items-center p-4 w-full max-w-screen-2xl mx-auto">
+          {/* Icon and Brand */}
+          <Link href="/" className="flex items-center gap-2 cursor-pointer">
+            <Image src="/logo.png" alt="logo" width={32} height={32} />
+            <h1 className="text-xl md:text-2xl">
+              <span className="text-black/70">Buying</span>
+              <span className="text-primary font-bold">Good</span>
+            </h1>
           </Link>
-          <button
-            onClick={() => scrollToSection("our-story")}
-            className="hover:text-primary cursor-pointer"
-          >
-            Our Story
-          </button>
-          <button
-            onClick={() => scrollToSection("data-viz")}
-            className="hover:text-primary cursor-pointer"
-          >
-            The Problem in Numbers
-          </button>
-          <button
-            onClick={() => scrollToSection("our-solution")}
-            className="hover:text-primary cursor-pointer"
-          >
-            Our Solution
-          </button>
-          <button
-            onClick={() => scrollToSection("testimonials")}
-            className="hover:text-primary cursor-pointer"
-          >
-            Testimonials
-          </button>
-        </div>
 
-        {/* Desktop CTA button */}
-        <div className="hidden md:block">
-          <SignedOut>
-            <Link href="/sign-up">
-              <Button
-                variant={"outline"}
-                className="border-primary text-primary font-medium cursor-pointer hover:bg-primary hover:text-white"
-              >
-                I&apos;m a Farmer
-              </Button>
+          {/* Desktop Nav Links */}
+          <div className="hidden lg:flex items-center gap-8 xl:gap-12">
+            <Link href={"/farms"} className="hover:text-primary cursor-pointer">
+              Nearby Farms
             </Link>
-          </SignedOut>
-          <SignedIn>
-            <div className="flex items-center gap-2">
-              <Link href="/dashboard">
+            <button
+              onClick={() => scrollToSection("our-story")}
+              className="hover:text-primary cursor-pointer"
+            >
+              Our Story
+            </button>
+            <button
+              onClick={() => scrollToSection("data-viz")}
+              className="hover:text-primary cursor-pointer"
+            >
+              The Problem in Numbers
+            </button>
+            <button
+              onClick={() => scrollToSection("our-solution")}
+              className="hover:text-primary cursor-pointer"
+            >
+              Our Solution
+            </button>
+            <button
+              onClick={() => scrollToSection("testimonials")}
+              className="hover:text-primary cursor-pointer"
+            >
+              Testimonials
+            </button>
+          </div>
+
+          {/* Desktop CTA button */}
+          <div className="hidden md:block">
+            <SignedOut>
+              <Link href="/sign-up">
                 <Button
                   variant={"outline"}
                   className="border-primary text-primary font-medium cursor-pointer hover:bg-primary hover:text-white"
                 >
-                  Dashboard
+                  I&apos;m a Farmer
                 </Button>
               </Link>
-              <UserButton />
-            </div>
-          </SignedIn>
-        </div>
+            </SignedOut>
+            <SignedIn>
+              <div className="flex items-center gap-2">
+                <Link href="/dashboard">
+                  <Button
+                    variant={"outline"}
+                    className="border-primary text-primary font-medium cursor-pointer hover:bg-primary hover:text-white"
+                  >
+                    Dashboard
+                  </Button>
+                </Link>
+                <UserButton />
+              </div>
+            </SignedIn>
+          </div>
 
-        {/* Mobile menu button */}
-        <button
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="md:hidden p-2"
-        >
-          {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </nav>
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="md:hidden p-2"
+          >
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </nav>
+      </div>
 
       {/* Mobile menu */}
       {isMenuOpen && (
@@ -197,6 +199,6 @@ export default function Navbar() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
