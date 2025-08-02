@@ -93,7 +93,7 @@ export default function FarmDetailPage({
     }
 
     setIsSubmitting(true);
-    
+
     try {
       const result = await sendContactEmail({
         ...values,
@@ -103,15 +103,17 @@ export default function FarmDetailPage({
       });
 
       if (result.success) {
-        toast.success("Message sent successfully! The farm will receive your inquiry.");
+        toast.success(
+          "Message sent successfully! The farm will receive your inquiry."
+        );
         form.reset();
       } else {
         toast.error("Failed to send message. Please try again.");
-        console.error('Contact form error:', result.error);
+        console.error("Contact form error:", result.error);
       }
     } catch (error) {
       toast.error("Failed to send message. Please try again.");
-      console.error('Contact form error:', error);
+      console.error("Contact form error:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -326,7 +328,14 @@ export default function FarmDetailPage({
                   <MapPin className="w-4 h-4 mt-1 text-gray-500" />
                   <div>
                     <div className="font-medium text-blue-600 underline cursor-pointer">
-                      {farm.address?.street} QLD {farm.address?.zipCode}
+                      {[
+                        farm.address?.street,
+                        farm.address?.city,
+                        farm.address?.state,
+                        farm.address?.zipCode,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
                     </div>
                   </div>
                 </div>
@@ -346,11 +355,8 @@ export default function FarmDetailPage({
             </div>
 
             {/* Map Card */}
-            <div className="border border-gray-200 rounded-lg p-6">
-              <div className="text-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Map</h3>
-              </div>
-              <div className="w-full h-48">
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="w-full h-full block">
                 {farm.address &&
                   farm.address.street &&
                   farm.address.city &&
@@ -365,7 +371,7 @@ export default function FarmDetailPage({
                           zipCode: string;
                         }
                       }
-                      className="w-full h-full rounded"
+                      className="w-full h-full block"
                     />
                   )}
               </div>
