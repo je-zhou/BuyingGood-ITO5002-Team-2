@@ -29,7 +29,9 @@ import * as z from "zod";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import { unauthenticatedApiClient } from "@/lib/api-client";
 import { Farm } from "@/lib/api-types";
+import { sendContactEmail } from "@/lib/actions";
 import Image from "next/image";
+import { toast } from "sonner";
 
 // Helper function to convert relative image paths to full URLs
 const getImageUrl = (imagePath: string): string => {
@@ -72,6 +74,7 @@ export default function FarmDetailPage({
   const [farm, setFarm] = useState<Farm | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof contactFormSchema>>({
     resolver: zodResolver(contactFormSchema),
@@ -83,11 +86,37 @@ export default function FarmDetailPage({
     },
   });
 
-  function onSubmit(values: z.infer<typeof contactFormSchema>) {
-    console.log(values);
-    // Handle form submission here
-    alert("Message sent successfully!");
-    form.reset();
+  async function onSubmit(values: z.infer<typeof contactFormSchema>) {
+    if (!farm) {
+      toast.error("Farm information not available. Please try again.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const result = await sendContactEmail({
+        ...values,
+        farmId: farm.farmId,
+        farmName: farm.name || "",
+        farmEmail: farm.contact_email || "",
+      });
+
+      if (result.success) {
+        toast.success(
+          "Message sent successfully! The farm will receive your inquiry."
+        );
+        form.reset();
+      } else {
+        toast.error("Failed to send message. Please try again.");
+        console.error("Contact form error:", result.error);
+      }
+    } catch (error) {
+      toast.error("Failed to send message. Please try again.");
+      console.error("Contact form error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   useEffect(() => {
@@ -299,7 +328,14 @@ export default function FarmDetailPage({
                   <MapPin className="w-4 h-4 mt-1 text-gray-500" />
                   <div>
                     <div className="font-medium text-blue-600 underline cursor-pointer">
-                      {farm.address?.street} QLD {farm.address?.zipCode}
+                      {[
+                        farm.address?.street,
+                        farm.address?.city,
+                        farm.address?.state,
+                        farm.address?.zipCode,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
                     </div>
                   </div>
                 </div>
@@ -319,11 +355,8 @@ export default function FarmDetailPage({
             </div>
 
             {/* Map Card */}
-            <div className="border border-gray-200 rounded-lg p-6">
-              <div className="text-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Map</h3>
-              </div>
-              <div className="w-full h-48">
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="w-full h-full block">
                 {farm.address &&
                   farm.address.street &&
                   farm.address.city &&
@@ -338,7 +371,7 @@ export default function FarmDetailPage({
                           zipCode: string;
                         }
                       }
-                      className="w-full h-full rounded"
+                      className="w-full h-full block"
                     />
                   )}
               </div>
@@ -439,9 +472,10 @@ export default function FarmDetailPage({
 
                 <Button
                   type="submit"
-                  className="w-full bg-black text-white hover:bg-gray-800 h-12 text-base font-medium"
+                  disabled={isSubmitting}
+                  className="w-full bg-black text-white hover:bg-gray-800 h-12 text-base font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Submit
+                  {isSubmitting ? "Sending..." : "Submit"}
                 </Button>
               </form>
             </Form>

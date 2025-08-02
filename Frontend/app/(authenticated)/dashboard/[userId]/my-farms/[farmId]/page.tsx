@@ -437,8 +437,14 @@ export default function FarmManagement({
                       <MapPin className="w-4 h-4 mt-1 text-gray-500" />
                       <div>
                         <div className="font-medium text-blue-600 underline cursor-pointer">
-                          {farm.address?.street} {farm.address?.state}{" "}
-                          {farm.address?.zipCode}
+                          {[
+                            farm.address?.street,
+                            farm.address?.city,
+                            farm.address?.state,
+                            farm.address?.zipCode,
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
                         </div>
                       </div>
                     </div>
@@ -458,11 +464,8 @@ export default function FarmManagement({
                 </div>
 
                 {/* Map Card */}
-                <div className="border border-gray-200 rounded-lg p-6">
-                  <div className="text-center mb-4">
-                    <h3 className="text-lg font-medium text-gray-900">Map</h3>
-                  </div>
-                  <div className="w-full h-48">
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="w-full h-full block">
                     {farm.address &&
                       farm.address.street &&
                       farm.address.city &&
@@ -477,7 +480,7 @@ export default function FarmManagement({
                               zipCode: string;
                             }
                           }
-                          className="w-full h-full rounded"
+                          className="w-full h-full block"
                         />
                       )}
                   </div>
@@ -798,11 +801,8 @@ export default function FarmManagement({
                 </div>
 
                 {/* Map Card */}
-                <div className="border border-gray-200 rounded-lg p-6">
-                  <div className="text-center mb-4">
-                    <h3 className="text-lg font-medium text-gray-900">Map</h3>
-                  </div>
-                  <div className="w-full h-48">
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="w-full h-full block">
                     {farm.address &&
                       farm.address.street &&
                       farm.address.city &&
@@ -817,7 +817,7 @@ export default function FarmManagement({
                               zipCode: string;
                             }
                           }
-                          className="w-full h-full rounded"
+                          className="w-full h-full block"
                         />
                       )}
                   </div>
