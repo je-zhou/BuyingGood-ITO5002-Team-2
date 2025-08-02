@@ -29,7 +29,9 @@ import * as z from "zod";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import { unauthenticatedApiClient } from "@/lib/api-client";
 import { Farm } from "@/lib/api-types";
+import { sendContactEmail } from "@/lib/actions";
 import Image from "next/image";
+import { toast } from "sonner";
 
 // Helper function to convert relative image paths to full URLs
 const getImageUrl = (imagePath: string): string => {
@@ -72,6 +74,7 @@ export default function FarmDetailPage({
   const [farm, setFarm] = useState<Farm | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof contactFormSchema>>({
     resolver: zodResolver(contactFormSchema),
@@ -83,11 +86,35 @@ export default function FarmDetailPage({
     },
   });
 
-  function onSubmit(values: z.infer<typeof contactFormSchema>) {
-    console.log(values);
-    // Handle form submission here
-    alert("Message sent successfully!");
-    form.reset();
+  async function onSubmit(values: z.infer<typeof contactFormSchema>) {
+    if (!farm) {
+      toast.error("Farm information not available. Please try again.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      const result = await sendContactEmail({
+        ...values,
+        farmId: farm.farmId,
+        farmName: farm.name || "",
+        farmEmail: farm.contact_email || "",
+      });
+
+      if (result.success) {
+        toast.success("Message sent successfully! The farm will receive your inquiry.");
+        form.reset();
+      } else {
+        toast.error("Failed to send message. Please try again.");
+        console.error('Contact form error:', result.error);
+      }
+    } catch (error) {
+      toast.error("Failed to send message. Please try again.");
+      console.error('Contact form error:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   useEffect(() => {
@@ -439,9 +466,10 @@ export default function FarmDetailPage({
 
                 <Button
                   type="submit"
-                  className="w-full bg-black text-white hover:bg-gray-800 h-12 text-base font-medium"
+                  disabled={isSubmitting}
+                  className="w-full bg-black text-white hover:bg-gray-800 h-12 text-base font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Submit
+                  {isSubmitting ? "Sending..." : "Submit"}
                 </Button>
               </form>
             </Form>
