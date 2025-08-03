@@ -35,7 +35,7 @@ df = df[['lga_label', 'state', 'year','total_business_count']]
 fig = px.bar(df, x="year", y="total_business_count", color="lga_label",
               title="Trends in FNQ Top Fruit and Vegetable Production Areas <br><sup><i>Count of agricultural businesses active at the end of each financial year</i></sup>",
               labels={"year": "Financial Year", "total_business_count": "Businesses", "lga_label": "Region"},
-              color_discrete_sequence= ['#1f77b4','#ff7f0e','#2ca02c','#9467bd'],
+              color_discrete_sequence= ['#1ca81c','#c0cc2c','#7cb32d','#1cae80'],
               template="plotly_white")
 
 # Ensure year is shown as a category and ordered correctly
