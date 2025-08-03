@@ -42,6 +42,19 @@ const getImageUrl = (imagePath: string): string => {
   return `/${imagePath}`;
 };
 
+// Encouraging messages for successful email submissions
+const encouragingMessages = [
+  "🌱 Well done, you're making a difference in the production patterns in fresh produce!",
+  "👋 Hey there! Great job on reaching out to a local farmer.",
+  "♻️ Great work on reducing consumption and production unsustainability!",
+  "🌾 Thank you for being a force of change in the fresh produce supply chain.",
+  "🥬 Great decision supporting local fresh produce!",
+  "🌟 Wow, that was a great step towards supporting local farms for a more sustainable future!",
+  "🤝 Thanks for contacting a local farmer, they are thrilled to partner with you for a more sustainable future.",
+  "💪 Great work there! You are challenging the status quo of the fresh produce supply chain!",
+  "❤️ Thank you for doing good with BuyingGood!",
+];
+
 // Contact form schema
 const contactFormSchema = z.object({
   name: z.string().min(2, {
@@ -103,8 +116,30 @@ export default function FarmDetailPage({
       });
 
       if (result.success) {
-        toast.success(
-          "Message sent successfully! The farm will receive your inquiry."
+        const randomMessage =
+          encouragingMessages[
+            Math.floor(Math.random() * encouragingMessages.length)
+          ];
+        toast(
+          <div style={{ fontWeight: "normal" }}>
+            <div>{randomMessage}</div>
+            <br />
+            <div>
+              Message sent successfully! The farm will receive your inquiry.
+            </div>
+          </div>,
+          {
+            duration: 8000,
+            style: {
+              minHeight: "80px",
+              fontSize: "16px",
+              lineHeight: "1.5",
+              padding: "16px 20px",
+              backgroundColor: "#1ca81c",
+              color: "white",
+              border: "none",
+            },
+          }
         );
         form.reset();
       } else {
@@ -399,6 +434,7 @@ export default function FarmDetailPage({
                       <FormControl>
                         <Input
                           placeholder="Enter your name"
+                          autoComplete="off"
                           className="border-gray-300 focus:border-gray-500 focus:ring-gray-500"
                           {...field}
                         />
@@ -420,6 +456,7 @@ export default function FarmDetailPage({
                         <Input
                           placeholder="Enter your email address"
                           type="email"
+                          autoComplete="off"
                           className="border-gray-300 focus:border-gray-500 focus:ring-gray-500"
                           {...field}
                         />
@@ -441,6 +478,7 @@ export default function FarmDetailPage({
                       <FormControl>
                         <Input
                           placeholder="Enter your company name"
+                          autoComplete="off"
                           className="border-gray-300 focus:border-gray-500 focus:ring-gray-500"
                           {...field}
                         />
@@ -461,6 +499,7 @@ export default function FarmDetailPage({
                       <FormControl>
                         <Textarea
                           placeholder="Enter your message here..."
+                          autoComplete="off"
                           className="min-h-32 border-gray-300 focus:border-gray-500 focus:ring-gray-500 resize-none"
                           {...field}
                         />
@@ -473,7 +512,7 @@ export default function FarmDetailPage({
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-black text-white hover:bg-gray-800 h-12 text-base font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-primary text-white hover:bg-primary/90 h-12 text-base font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? "Sending..." : "Submit"}
                 </Button>
