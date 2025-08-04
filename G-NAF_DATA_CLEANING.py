@@ -100,11 +100,8 @@ df_detail_clean = df_detail_clean.dropna(subset=['address_detail_pid'])
 df_detail_clean = df_detail_clean.dropna(subset=['address_site_pid','street_locality_pid','locality_pid'])
 
 # Only keep rows with data relating to Far North Queensland area
-fnq_postcode_list = ('4680', '4814', '4823', '4825', '4830', '4852', '4854', '4855', '4856', '4857', '4858', '4859', '4860','4865', '4868', '4869', '4870', '4871', '4872', '4873', '4874', '4875', '4876', '4877', '4878', '4879','4880', '4881', '4882', '4883', '4884', '4885', '4886', '4887', '4888', '4890', '4891', '4892', '4895')
+fnq_postcode_list = (4680,4814,4823,4825,4830,4852,4854,4855,4856,4857,4858,4859,4860,4865,4868,4869,4870,4871,4872,4873,4874,4875,4876,4877,4878,4879,4880,4881,4882,4883,4884,4885,4886,4887,4888,4890,4891,4892,4895)
 df_detail_clean = df_detail_clean[df_detail_clean['postcode'].isin(fnq_postcode_list)]
-
-# Drop columns not required for address details
-df_detail_clean = df_detail_clean.drop(['date_created','date_last_modified','date_retired','location_description', 'alias_principal','private_street','legal_parcel_id','confidence','level_geocoded_code','property_pid','gnaf_property_pid','primary_secondary'], axis=1)
 
 # Set data types
 df_detail_clean = df_detail_clean.astype({'address_site_pid': str, 'locality_pid': str, 'street_locality_pid': str})
@@ -121,8 +118,14 @@ df_merge = pd.merge(df_merge, df_street_clean, on='street_locality_pid', how='in
 # Join df_geocode_clean on address_site_pid
 df_merge = pd.merge(df_merge, df_geocode_clean, on='address_site_pid', how='inner') 
 
-# Drop foreign key columns not required for address details
-df_merge = df_merge.drop(['locality_pid','street_locality_pid', 'address_site_pid'], axis=1)
+# Add State column and merge number_first, street_name and street_type_code to one column
+df_merge['state'] = 'QLD'
+df_merge = df_merge.dropna(subset=['number_first'])
+df_merge['street'] = df_merge['number_first'].round(0).astype(int).astype(str) + ' ' + df_merge['street_name'] + ' ' + df_merge['street_type_code']
+
+# Keep columns required for address details and rename
+df_merge = df_merge[['address_detail_pid','street','locality_name','state','postcode','latitude','longitude']]
+df_merge = df_merge.rename(columns={'locality_name':'city', 'postcode':'zipcode'})
 
 # Export cleaned data to csv
 df_merge.to_csv('QLD_ADDRESS_DETAIL_CLEAN.csv', index = False)
