@@ -20,6 +20,21 @@ if clerk_secret_key == "" or clerk_secret_key is None:
     clerk_secret_key = os.getenv('clerk_secret_key')
 
 
+""" Flask Setup """
+
+from flask import Flask, jsonify, request, g
+import exceptions as exc
+import datetime
+import numpy as np
+
+app = Flask(__name__)
+
+from flask_cors import CORS, cross_origin
+
+cors = CORS(app) # allow CORS for all domains on all routes.
+app.config['CORS_HEADERS'] = 'Content-Type'
+
+
 """ MongoDB Setup """
 
 from pymongo.mongo_client import MongoClient
@@ -38,24 +53,10 @@ client = MongoClient(uri, server_api=ServerApi('1'), tlsCAFile=certifi.where())
 # Send a ping to confirm a successful connection
 try:
     client.admin.command('ping')
-    print("Pinged your deployment. You successfully connected to MongoDB!")
+    app.logger.info("Pinged your deployment. You successfully connected to MongoDB!")
 except Exception as e:
-    print(e)
+    app.logger.info(e)
 
-
-""" Flask Setup """
-
-from flask import Flask, jsonify, request, g
-import exceptions as exc
-import datetime
-import numpy as np
-
-app = Flask(__name__)
-
-from flask_cors import CORS, cross_origin
-
-cors = CORS(app) # allow CORS for all domains on all routes.
-app.config['CORS_HEADERS'] = 'Content-Type'
 
 """ Clerk Authentication """
 
@@ -75,10 +76,8 @@ def clerk_auth_required(f):
                 AuthenticateRequestOptions()
             )
 
-            print(" Headers: ", request.headers)
-
-            # TODO: actually verify the user token is still valid
-            print(" Payload: ", claims_state)
+            app.logger.info(" Headers: ", request.headers)
+            app.logger.info(" Payload: ", claims_state)
 
             # Get the our id for this user
             db = client.authentication
@@ -94,9 +93,9 @@ def clerk_auth_required(f):
             
             # Access the user ID via the .payload attribute.
             g.user_id = str(user["_id"])
-            print(f"Authenticated {g.clerk_id} as {g.user_id}")
+            app.logger.info(f"Authenticated {g.clerk_id} as {g.user_id}")
         except exc.Unauthorized as e:
-            print(f"Authentication error: {e.message}")
+            app.logger.warning(f"Authentication error: {e.message}")
             return jsonify({
                 "success": False, 
                 "error": {
@@ -151,6 +150,7 @@ def mongo_to_dict(obj, id_name="id", exclusion_list=[]):
             
     return new_doc
 
+
 """ Authentication Endpoints """
 
 @app.route("/auth/register", methods=["POST"])
@@ -168,7 +168,7 @@ def auth_register():
 
         # Try to get the request body and make sure it is valid
         data = request.json.get("data")
-        print(f"{request.remote_addr}: Request body received, {data}")
+        app.logger.info(f"{request.remote_addr}: Request body received, {data}")
             
         phone_number = ""
         try:
@@ -184,7 +184,7 @@ def auth_register():
         # Check if the user email is already registered
         existing_user = db.users.find_one({"email": email_address})
         if existing_user is not None:
-            print(f"    {request.remote_addr}: Email is already registered, {email_address}")
+            app.logger.info(f"    {request.remote_addr}: Email is already registered, {email_address}")
             raise exc.BadRequest(f"Email is already registered, {email_address}")
         
         birthday = None
@@ -211,7 +211,7 @@ def auth_register():
             "createdAt": dt_object,
             "modifiedAt": dt_object
         }).inserted_id
-        print(f"    {request.remote_addr}: user_id created, {user_id}")
+        app.logger.info(f"    {request.remote_addr}: user_id created, {user_id}")
 
         return jsonify({
             "success": True,
@@ -225,7 +225,7 @@ def auth_register():
             }
         }), 201
     except Exception as e:
-        print(e)
+        app.logger.warning(e)
         return exc.handle_error(e)
 
 @app.route("/auth/update", methods=["POST"])
@@ -248,12 +248,12 @@ def auth_update():
         # Check if the user exists
         existing_user = db.users.find_one({"_id": ObjectId(user_id)})
         if existing_user is None:
-            print(f"    {request.remote_addr}: User ID does not exist, {user_id}")
+            app.logger.info(f"    {request.remote_addr}: User ID does not exist, {user_id}")
             raise exc.BadRequest(f"User ID does not exist, {user_id}")
 
         # Try to get the request body and make sure it is valid
         data = request.json.get("data")
-        print(f"{request.remote_addr}: Request body received, {data}")
+        app.logger.info(f"{request.remote_addr}: Request body received, {data}")
             
         phone_number = ""
         try:
@@ -270,7 +270,7 @@ def auth_update():
         # Check if the user email is already registered
         existing_user = db.users.find_one({"email": email_address})
         if existing_user is not None:
-            print(f"    {request.remote_addr}: Email is already registered, {email_address}")
+            app.logger.info(f"    {request.remote_addr}: Email is already registered, {email_address}")
             raise exc.BadRequest(f"Email is already registered, {email_address}")
         
         birthday = None
@@ -298,7 +298,7 @@ def auth_update():
                 "modifiedAt": dt_object
             }}
         )
-        print(f"    {request.remote_addr}: user_id created, {user_id}")
+        app.logger.info(f"    {request.remote_addr}: user_id created, {user_id}")
 
         return jsonify({
             "success": True,
@@ -311,7 +311,7 @@ def auth_update():
             }
         }), 200
     except Exception as e:
-        print(e)
+        app.logger.warning(e)
         return exc.handle_error(e)
 
 @app.route("/auth/delete", methods=["POST"])
@@ -334,19 +334,19 @@ def auth_delete():
         # Check if the user exists
         existing_user = db.users.find_one({"_id": ObjectId(user_id)})
         if existing_user is None:
-            print(f"    {request.remote_addr}: User ID does not exist, {user_id}")
+            app.logger.info(f"    {request.remote_addr}: User ID does not exist, {user_id}")
             raise exc.BadRequest(f"User ID does not exist, {user_id}")
 
         # Deleted the user
         db.users.delete_one({"_id": ObjectId(user_id)})
-        print(f"    {request.remote_addr}: user deleted, {user_id}")
+        app.logger.info(f"    {request.remote_addr}: user deleted, {user_id}")
 
         return jsonify({
             "success": True,
             "message": "Farmer deleted successfully"
         }), 200
     except Exception as e:
-        print(e)
+        app.logger.warning(e)
         return exc.handle_error(e)
 
 @app.route('/auth/profile', methods=["GET"])
@@ -369,7 +369,7 @@ def auth_profile():
         # Get the the user if it exists
         existing_user = db.users.find_one({"_id": ObjectId(user_id)})
         if existing_user is None:
-            print(f"    {request.remote_addr}: User ID does not exist, {user_id}")
+            app.logger.info(f"    {request.remote_addr}: User ID does not exist, {user_id}")
             raise exc.BadRequest(f"User ID does not exist, {user_id}")
 
         # Return the user profile
@@ -378,7 +378,7 @@ def auth_profile():
             "data": mongo_to_dict(existing_user, "userId")
         }), 200
     except Exception as e:
-        print(e)
+        app.logger.warning(e)
         return exc.handle_error(e)
 
 """ Farm Endpoints """
@@ -405,7 +405,7 @@ def get_my_farms():
         db = client.farm_details
 
         data = request.args
-        print(f"{request.remote_addr}: Request args received, {data}")
+        app.logger.info(f"{request.remote_addr}: Request args received, {data}")
 
         filter = {"ownerId": ObjectId(g.user_id)}
 
@@ -422,7 +422,7 @@ def get_my_farms():
             elif key == "limit":
                 limit = np.clip(int(data.get(key)),1,100)
             else:
-                print(f"    {request.remote_addr}: {key} ignored")
+                app.logger.info(f"    {request.remote_addr}: {key} ignored")
         
         # Create the pagination information
         farm_count = int(db.farms.count_documents(filter))
@@ -447,7 +447,7 @@ def get_my_farms():
             }
         }), 200
     except Exception as e:
-        print(e)
+        app.logger.warning(e)
         return exc.handle_error(e)
 
 @app.route('/farms', methods=["POST", "GET"])
@@ -459,7 +459,7 @@ def farms():
         elif request.method == "GET":
             return get_farms()
     except Exception as e:
-        print(e)
+        app.logger.warning(e)
         return exc.handle_error(e)
 
 @clerk_auth_required
@@ -472,10 +472,10 @@ def create_farm():
 
     # Check if the json data inludes a data key (the request was malformed)
     if "data" in data.keys():
-        print("Request was malformed but we recovered")
+        app.logger.info("Request was malformed but we recovered")
         data = data.get("data")
     
-    print(f"Request data, {data}")
+    app.logger.info(f"Request data, {data}")
 
     # Add the additional fields
     data["ownerId"] = ObjectId(g.user_id)
@@ -516,7 +516,7 @@ def get_farms():
     db = client.farm_details
 
     data = request.args
-    print(f"{request.remote_addr}: Request args received, {data}")
+    app.logger.info(f"{request.remote_addr}: Request args received, {data}")
 
     filter = {}
 
@@ -534,7 +534,7 @@ def get_farms():
             if not isinstance(categories,list):
                 categories = categories.split(",")
             
-            print(categories)
+            app.logger.info(categories)
             
             produce_within_categories = db.produce.find({"category": { "$in": categories }})
 
@@ -543,15 +543,15 @@ def get_farms():
             farms_within_categories = [ObjectId(produce["farmId"]) for produce in produce_within_categories]
 
             filter["_id"] = {"$in": farms_within_categories}
-            print(farms_within_categories)
+            app.logger.info(farms_within_categories)
         elif key == "page":
             page = int(data.get(key))
         elif key == "limit":
             limit = np.clip(int(data.get(key)),1,100)
         else:
-            print(f"    {request.remote_addr}: {key} ignored")
+            app.logger.info(f"    {request.remote_addr}: {key} ignored")
         
-    print(filter)
+    app.logger.info(filter)
 
     # Create the pagination information
     farm_count = int(db.farms.count_documents(filter))
@@ -593,7 +593,7 @@ def farm(farmId : str):
         elif request.method == "GET":
             return get_farm(farmId)
     except Exception as e:
-        print(e)
+        app.logger.warning(e)
         return exc.handle_error(e)
 
 @clerk_auth_required
@@ -617,10 +617,10 @@ def update_farm(farmId : str):
 
     # Check if the json data inludes a data key (the request was malformed)
     if "data" in data.keys():
-        print("Request was malformed but we recovered")
+        app.logger.info("Request was malformed but we recovered")
         data = data.get("data")
     
-    print(f"Request data, {data}")
+    app.logger.info(f"Request data, {data}")
     
     # Create the set data dictionary
     set_data = {}
@@ -719,7 +719,7 @@ def farm_produce(farmId : str):
         elif request.method == "GET":
             return get_farm_produce(farmId)
     except Exception as e:
-        print(e)
+        app.logger.warning(e)
         return exc.handle_error(e)
 
 
@@ -734,7 +734,7 @@ def get_farm_produce(farmId : str):
     db = client.farm_details
     
     data = request.args
-    print(f"{request.remote_addr}: Request args received, {data}")
+    app.logger.info(f"{request.remote_addr}: Request args received, {data}")
 
     # Create the farm filter
     filter = {"farmId":ObjectId(farmId)}
@@ -742,7 +742,7 @@ def get_farm_produce(farmId : str):
     # Get the farm details
     farm = db.farms.find_one({"_id":ObjectId(farmId)})
     if farm is None:
-        print(f"    {request.remote_addr}: Farm does not exist, {farmId}")
+        app.logger.info(f"    {request.remote_addr}: Farm does not exist, {farmId}")
         raise exc.BadRequest(f"Farm does not exist, {farmId}")
 
     # Set the default page and limit
@@ -751,13 +751,13 @@ def get_farm_produce(farmId : str):
 
     # Create the filter, and fill the page and limit if they have been provided
     for key in list(data.keys()):
-        print(key)
+        app.logger.info(key)
         if key == "page":
             page = int(data.get(key))
         elif key == "limit":
             limit = np.clip(int(data.get(key)),1,100)
         else:
-            print(f"    {request.remote_addr}: {key} ignored")
+            app.logger.info(f"    {request.remote_addr}: {key} ignored")
     
     # Create the pagination information
     produce_count = int(db.produce.count_documents(filter))
@@ -807,7 +807,7 @@ def add_farm_produce(farmId : str):
 
     # Check if the json data inludes a data key (the request was malformed)
     if "data" in data.keys():
-        print("Request was malformed but we recovered")
+        app.logger.info("Request was malformed but we recovered")
         data = data.get("data")
 
     # Add the farm id and created timestamp
@@ -839,7 +839,7 @@ def id_produce(produceId : str):
         elif request.method == "GET":
             return get_produce_id(produceId)
     except Exception as e:
-        print(e)
+        app.logger.warning(e)
         return exc.handle_error(e)
 
 
@@ -854,20 +854,20 @@ def get_produce_id(produceId: str):
     db = client.farm_details
     
     data = request.args
-    print(f"{request.remote_addr}: Request args received, {data}")
+    app.logger.info(f"{request.remote_addr}: Request args received, {data}")
 
     # Get the produce document associated with this id
     produce = db.produce.find_one({"_id": ObjectId(produceId)})
     # If no produce document was found return an error
     if produce is None:
-        print(f"    {request.remote_addr}: Produce with this id does not exist, {produceId}")
+        app.logger.info(f"    {request.remote_addr}: Produce with this id does not exist, {produceId}")
         raise exc.BadRequest(f"Produce with this id does not exist, {produceId}")
     
     # Get the farm document associated with this produce
     farm = db.farms.find_one({"_id": produce["farmId"]})
     # If no farm was found with the produce document's farm id return an error
     if farm is None:
-        print(f"    {request.remote_addr}: Farm with this id does not exist, {produce["farmId"]}")
+        app.logger.info(f"    {request.remote_addr}: Farm with this id does not exist, {produce["farmId"]}")
         raise exc.BadRequest(f"Produce with this id does not exist, {produce["farmId"]}")
     
     # Convert the produce document to a json compatible dict
@@ -923,7 +923,7 @@ def update_produce_id(produceId: str):
 
     # Check if the json data inludes a data key (the request was malformed)
     if "data" in data.keys():
-        print("Request was malformed but we recovered")
+        app.logger.info("Request was malformed but we recovered")
         data = data.get("data")
     
     # Create the set data dictionary
@@ -1002,7 +1002,7 @@ def categories():
 
             Response (200 OK)
         """
-        print(f"{request.remote_addr}: Request received")
+        app.logger.info(f"{request.remote_addr}: Request received")
 
         db = client.farm_details
 
@@ -1015,7 +1015,7 @@ def categories():
             }
         }), 200
     except Exception as e:
-        print(e)
+        app.logger.warning(e)
         return exc.handle_error(e)
 
 """ Run Flask App """
