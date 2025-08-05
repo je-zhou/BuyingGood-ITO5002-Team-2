@@ -230,7 +230,6 @@ def auth_register():
 
 @app.route("/auth/update", methods=["POST"])
 @cross_origin()
-@clerk_auth_required
 def auth_update():
     """
         Update details of a farmer account
@@ -241,15 +240,6 @@ def auth_update():
     """
     try:
         db = client.authentication
-        
-        # Get the user id from the authentication decorator
-        user_id = g.user_id
-
-        # Check if the user exists
-        existing_user = db.users.find_one({"_id": ObjectId(user_id)})
-        if existing_user is None:
-            app.logger.info(f"    {request.remote_addr}: User ID does not exist, {user_id}")
-            raise exc.BadRequest(f"User ID does not exist, {user_id}")
 
         # Try to get the request body and make sure it is valid
         data = request.json.get("data")
@@ -262,7 +252,6 @@ def auth_update():
             pass
 
         email_address = ""
-
         for email in data.get("email_addresses"):
             if email["id"] == data.get("primary_email_address_id"):
                 email_address = email["email_address"]
@@ -285,29 +274,26 @@ def auth_update():
         dt_object = datetime.datetime.fromtimestamp(timestamp_seconds)
 
         # Attempt to create the user in the database
-        user_id = db.users.update_one(
-            {"_id": ObjectId(g.user_id)},
-            {"$set":{
-                "firstName": data.get("first_name"),
-                "lastName": data.get("family_name"),
-                "birthday": birthday,
-                "gender": data.get("gender"),
-                "phoneNumber": phone_number,
-                "email": email_address,
-                "profileImage": data.get("profile_image_url"),
-                "modifiedAt": dt_object
-            }}
-        )
-        app.logger.info(f"    {request.remote_addr}: user_id created, {user_id}")
+        db.users.update_one({"clerkId": data.get("id")},{"$set":{
+            "firstName": data.get("first_name"),
+            "lastName": data.get("last_name"),
+            "birthday": birthday,
+            "gender": data.get("gender"),
+            "phoneNumber": phone_number,
+            "email": email_address,
+            "profileImage": data.get("profile_image_url"),
+            "modifiedAt": dt_object
+        }})
+        app.logger.info(f"    {request.remote_addr}: user_id updated, {data.get("id")}")
 
         return jsonify({
             "success": True,
             "message": "Farmer updated successfully",
             "data": {
-                "userId": str(user_id),
+                "clerkId": data.get("id"),
                 "email": email_address,
                 "firstName": data.get("first_name"),
-                "lastName": data.get("first_name")
+                "lastName": data.get("last_name")
             }
         }), 200
     except Exception as e:
@@ -316,30 +302,31 @@ def auth_update():
 
 @app.route("/auth/delete", methods=["POST"])
 @cross_origin()
-@clerk_auth_required
 def auth_delete():
     """
         Delete a farmer account
     
         Endpoint: POST /auth/update
 
-        Response (201 Created)
+        Response (200 OK)
     """
     try:
         db = client.authentication
-        
-        # Get the user id from the authentication decorator
-        user_id = g.user_id
+
+        # Try to get the request body and make sure it is valid
+        data = request.json.get("data")
+        app.logger.info(f"{request.remote_addr}: Request body received, {data}")
+        clerk_id = data.get("id")
 
         # Check if the user exists
-        existing_user = db.users.find_one({"_id": ObjectId(user_id)})
+        existing_user = db.users.find_one({"clerkId": clerk_id})
         if existing_user is None:
-            app.logger.info(f"    {request.remote_addr}: User ID does not exist, {user_id}")
-            raise exc.BadRequest(f"User ID does not exist, {user_id}")
+            app.logger.info(f"    {request.remote_addr}: User ID does not exist, {clerk_id}")
+            raise exc.BadRequest(f"User ID does not exist, {clerk_id}")
 
         # Deleted the user
-        db.users.delete_one({"_id": ObjectId(user_id)})
-        app.logger.info(f"    {request.remote_addr}: user deleted, {user_id}")
+        db.users.delete_one({"clerkId": clerk_id})
+        app.logger.info(f"    {request.remote_addr}: user deleted, {clerk_id}")
 
         return jsonify({
             "success": True,
