@@ -494,6 +494,7 @@ def get_farms():
         Query Parameters:
             city (optional): Filter by city
             state (optional): Filter by state
+            location (optional): Splits into city and state
             categories (optional): Filter by produce categories
             page (optional): Page number for pagination (default: 1)
             limit (optional): Items per page (default: 20)
@@ -513,8 +514,14 @@ def get_farms():
 
     # Create the filter, and fill the page and limit if they have been provided
     for key in list(data.keys()):
-        if key in ["city","state"]: # categories not implemented
-            filter[key] = data.get(key)
+        if key == "city": # categories not implemented
+            city = data.get(key).upper().strip()
+        elif key == "state":
+            state = data.get(key).upper().strip()
+        elif key == "location":
+            location = str(data.get(key)).split(",")
+            city = location[0].upper().strip()
+            state = location[1].upper().strip()
         elif key == "categories":
             categories = data.get("categories")
             farms_within_categories = []
@@ -547,6 +554,17 @@ def get_farms():
     first_item = int((page-1)*limit+1)
 
     # TODO: order by distance to current position
+    # FILTERING LOGIC
+    # IF THE city or state is anything other than none or "" then we need to find the geolocation of the given city or state
+    if city is not None and city != "":
+        analyticsdb = client.analytics
+        if state is not None and state != "":
+            address_in_city = analyticsdb.national_address_file.find_one({"city":city,"state":state})
+        else:
+            address_in_city = analyticsdb.national_address_file.find_one({"city":city})
+        
+
+
     cursor = db.farms.find(filter,skip=first_item-1,limit=limit)
     farm_list = [mongo_to_dict(farm, "farmId") for farm in cursor]
 
