@@ -141,7 +141,7 @@ connect_str = 'mongodb+srv://' + db_username + ':' + db_password + '@buyinggood.
 
 # MongoDB connection
 client = MongoClient(connect_str)
-db = client['analytics']
+db = client['farm_details']
 collection = db['national_address_file']
 
 # Delete all documents in the collection
