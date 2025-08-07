@@ -1,3 +1,5 @@
+SUPPORTED_STATES=["QLD","NSW","ACT","VIC","WA", "SA", "NT", "TAS"]
+
 """ Environment Variables """
 
 import os
@@ -525,15 +527,28 @@ def get_farms():
     except (ValueError, TypeError):
         return jsonify({"success": False, "error": "Invalid pagination parameters"}), 400
 
-    city = args.get('city')
-    state = args.get('state')
+    s_city = args.get('city')
+    s_state = args.get('state')
+    s_zipcode = args.get('zipcode')
     if location_str := args.get('location'):
         parts = location_str.split(',')
-        city = parts[0].strip().upper() if parts[0] else None
-        state = parts[1].strip().upper() if len(parts) > 1 and parts[1] else None
+
+        for part in parts:
+            if part:
+                part = part.strip().upper()
+                if part in SUPPORTED_STATES:
+                    s_state = part
+                elif len(part)==4 and int(part):
+                    s_zipcode = int(part)
+                elif part != "":
+                    s_city = part
+
+        s_city = s_city if s_city else None
+        s_state = s_state if s_state else None
+        s_zipcode = s_zipcode if s_zipcode else None
     
-    if city: city = city.strip().upper()
-    if state: state = state.strip().upper()
+    if s_city: s_city = s_city.strip().upper()
+    if s_state: s_state = s_state.strip().upper()
 
     distance_km = args.get('distance', 50, type=int)
     categories_str = args.get('categories')
@@ -552,12 +567,14 @@ def get_farms():
         farm_ids_from_category = {p['farmId'] for p in produce_in_categories}
 
     # Path A: Location-based search
-    if city:
+    if s_city or s_zipcode:
         target_collection = db.national_address_file
-        location_query = {"city": city}
-        if state:
-            location_query["state"] = state
-        
+        location_query = {}
+        if s_city:
+            location_query["city"] = s_city
+        if s_zipcode:
+            location_query["zipcode"] = s_zipcode
+
         center_point_doc = db.national_address_file.find_one(location_query)
         
         if not (center_point_doc and 'location' in center_point_doc):
@@ -661,6 +678,9 @@ def get_farms():
     if farm_ids_from_category is not None:
         match_filter['_id'] = {'$in': list(farm_ids_from_category)}
 
+    if s_state and not s_city and not s_zipcode:
+        match_filter['address.state'] = s_state
+
     if match_filter:
         pipeline.append({'$match': match_filter})
 
@@ -670,7 +690,7 @@ def get_farms():
     }})
 
     # Add sort for location-based queries
-    if city:
+    if s_city or s_zipcode:
         pipeline.append({'$sort': {'distance.meters': 1}})
 
     # Add pagination
