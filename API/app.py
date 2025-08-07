@@ -551,8 +551,9 @@ def get_farms():
         )
         farm_ids_from_category = {p['farmId'] for p in produce_in_categories}
 
-    # If a location is provided, use the geospatial search path
+    # Path A: Location-based search
     if city:
+        target_collection = db.national_address_file
         location_query = {"city": city}
         if state:
             location_query["state"] = state
@@ -563,21 +564,8 @@ def get_farms():
             return jsonify({"success": True, "data": {"farms": [], "pagination": {
                 "currentPage": 1, "totalPages": 0, "totalItems": 0, "itemsPerPage": limit
             }}}), 200
-        
-        # Search the index for the text
-        if query_str:
-            pipeline.append({
-                '$search': {
-                    "index": "farm_text",
-                    "text": {
-                        "query": query_str,
-                        "path": {
-                            "wildcard": "*"
-                        }
-                    }
-            }})
 
-        # Find all addresses within the given radius
+        # Start pipeline with $geoNear
         pipeline.append({
             '$geoNear': {
                 'near': center_point_doc['location'],
@@ -587,7 +575,41 @@ def get_farms():
             }
         })
 
-        # Join with farms using a nested pipeline for prioritized matching
+        # Build the nested pipeline for the lookup
+        lookup_pipeline = []
+        if query_str:
+            lookup_pipeline.append({
+                '$search': {
+                    "index": "farm_text",
+                    "text": {
+                        "query": query_str,
+                        "path": {"wildcard": "*"}
+                    }
+                }
+            })
+        
+        # Add the address matching logic after the search
+        lookup_pipeline.extend([
+            {'$match': {'$expr': {'$or': [
+                {'$and': [
+                    {'$eq': ['$address.street', '$$addr_street']},
+                    {'$eq': ['$address.city', '$$addr_city']},
+                    {'$eq': ['$address.state', '$$addr_state']}
+                ]},
+                {'$eq': ['$address.zipCodeInt', '$$addr_zip']}
+            ]}}},
+            {'$addFields': {'match_priority': {'$cond': {
+                'if': {'$and': [
+                    {'$eq': ['$address.street', '$$addr_street']},
+                    {'$eq': ['$address.city', '$$addr_city']},
+                    {'$eq': ['$address.state', '$$addr_state']}
+                ]},
+                'then': 1, 'else': 2
+            }}}},
+            {'$sort': {'match_priority': 1}},
+            {'$limit': 1}
+        ])
+
         pipeline.append({
             '$lookup': {
                 'from': 'farms',
@@ -597,37 +619,12 @@ def get_farms():
                     'addr_state': '$state',
                     'addr_zip': '$zipcode'
                 },
-                'pipeline': [
-                    {
-                        '$match': {
-                            '$expr': {
-                                '$or': [
-                                    {'$and': [
-                                        {'$eq': ['$address.street', '$$addr_street']},
-                                        {'$eq': ['$address.city', '$$addr_city']},
-                                        {'$eq': ['$address.state', '$$addr_state']}
-                                    ]},
-                                    {'$eq': ['$address.zipCodeInt', '$$addr_zip']}
-                                ]
-                            }
-                        }
-                    },
-                    {'$addFields': {'match_priority': {'$cond': {
-                        'if': {'$and': [
-                            {'$eq': ['$address.street', '$$addr_street']},
-                            {'$eq': ['$address.city', '$$addr_city']},
-                            {'$eq': ['$address.state', '$$addr_state']}
-                        ]},
-                        'then': 1, 'else': 2
-                    }}}},
-                    {'$sort': {'match_priority': 1}},
-                    {'$limit': 1}
-                ],
+                'pipeline': lookup_pipeline,
                 'as': 'farm_match'
             }
         })
 
-        # Continue with the location-based pipeline
+        # Continue with the rest of the location-based pipeline
         pipeline.extend([
             {'$match': {'farm_match': {'$ne': []}}},
             {'$unwind': '$farm_match'},
@@ -639,51 +636,44 @@ def get_farms():
             {'$replaceRoot': {'newRoot': {'$mergeObjects': [
                 '$farm_doc',
                 {'distance': {'meters': '$closest_address_distance_meters'}}
-            ]}}},
+            ]}}}
         ])
-        
-        match_filter = {}
-        if farm_ids_from_category is not None:
-            match_filter['_id'] = {'$in': list(farm_ids_from_category)}
 
-        if match_filter:
-            pipeline.append({'$match': match_filter})
-
-        pipeline.extend([
-            {'$sort': {'distance.meters': 1}},
-            {'$addFields': {'distance.km': {'$divide': ['$distance.meters', 1000]}}},
-            {'$lookup': {'from': 'produce', 'localField': '_id', 'foreignField': 'farmId', 'as': 'produce'}}
-        ])
-        
-        target_collection = db.national_address_file
-
-    # Otherwise, use the simpler non-location search path
+    # Path B: Search-only
+    elif query_str:
+        target_collection = db.farms
+        pipeline.append({
+            '$search': {
+                "index": "farm_text",
+                "text": {
+                    "query": query_str,
+                    "path": {"wildcard": "*"}
+                }
+            }
+        })
+    
+    # Path C: No location, no search
     else:
-        match_filter = {}
-        if farm_ids_from_category is not None:
-            match_filter['_id'] = {'$in': list(farm_ids_from_category)}
-
-        if query_str:
-            pipeline.append({
-                '$search': {
-                    "index": "farm_text",
-                    "text": {
-                        "query": query_str,
-                        "path": {
-                            "wildcard": "*"
-                        }
-                    }
-            }})
-
-        if match_filter:
-            pipeline.append({'$match': match_filter})
-
-        pipeline.append({'$lookup': {
-            'from': 'produce', 'localField': '_id', 'foreignField': 'farmId', 'as': 'produce'
-        }})
         target_collection = db.farms
 
-    # Add pagination to the pipeline
+    # Apply category filter after main search/geo logic
+    match_filter = {}
+    if farm_ids_from_category is not None:
+        match_filter['_id'] = {'$in': list(farm_ids_from_category)}
+
+    if match_filter:
+        pipeline.append({'$match': match_filter})
+
+    # Add lookup for produce
+    pipeline.append({'$lookup': {
+        'from': 'produce', 'localField': '_id', 'foreignField': 'farmId', 'as': 'produce'
+    }})
+
+    # Add sort for location-based queries
+    if city:
+        pipeline.append({'$sort': {'distance.meters': 1}})
+
+    # Add pagination
     skip_amount = (page - 1) * limit
     pipeline.append({
         '$facet': {
