@@ -46,10 +46,6 @@ uri = f"mongodb+srv://{mongodb_user}:{mongodb_pass}@{mongodb_uri}/?retryWrites=t
 # Create a new client and connect to the server
 client = MongoClient(uri, server_api=ServerApi('1'))
 
-# only for MAC
-import certifi
-client = MongoClient(uri, server_api=ServerApi('1'), tlsCAFile=certifi.where())
-
 # Send a ping to confirm a successful connection
 try:
     client.admin.command('ping')
@@ -374,21 +370,21 @@ def auth_profile():
 @cross_origin()
 @clerk_auth_required
 def get_my_farms():
+    """
+        Get list of all of a users farms with optional filtering
+
+        Endpoint: GET /my_farms
+
+        Query Parameters:
+            city (optional): Filter by city
+            state (optional): Filter by state
+            categories (optional): Filter by produce categories
+            page (optional): Page number for pagination (default: 1)
+            limit (optional): Items per page (default: 20)
+
+        Response (200 OK)
+    """
     try:
-        """
-            Get list of all of a users farms with optional filtering
-
-            Endpoint: GET /my_farms
-
-            Query Parameters:
-                city (optional): Filter by city
-                state (optional): Filter by state
-                categories (optional): Filter by produce categories
-                page (optional): Page number for pagination (default: 1)
-                limit (optional): Items per page (default: 20)
-
-            Response (200 OK)
-        """
         db = client.farm_details
 
         data = request.args
@@ -464,6 +460,21 @@ def create_farm():
     
     app.logger.info(f"Request data, {data}")
 
+    # Uppercase address fields and create zipCodeInt for indexing
+    if 'address' in data and isinstance(data.get('address'), dict):
+        address = data['address']
+        if 'street' in address:
+            address['street'] = str(address.get('street', '')).upper()
+        if 'city' in address:
+            address['city'] = str(address.get('city', '')).upper()
+        if 'state' in address:
+            address['state'] = str(address.get('state', '')).upper()
+        
+        try:
+            address['zipCodeInt'] = int(address.get('zipCode'))
+        except (ValueError, TypeError, AttributeError):
+            address['zipCodeInt'] = None
+
     # Add the additional fields
     data["ownerId"] = ObjectId(g.user_id)
     data["createdAt"] = datetime.datetime.now()
@@ -471,17 +482,18 @@ def create_farm():
     # Add the farm
     farmId = db.farms.insert_one(data).inserted_id
 
-    # Replace the ownerId with the clerk ID for the frontend
-    data["ownerId"] = g.clerk_id
-
     # Get the farm data from mongodb
     farm = db.farms.find_one({"_id":farmId})
+    
+    # Convert to dict and replace ownerId with clerkId for the frontend
+    farm_doc = mongo_to_dict(farm, "farmId")
+    farm_doc["ownerId"] = g.clerk_id
 
     # Return the success message
     return jsonify({
         "success": True,
         "message": "Farm registered successfully",
-        "data": mongo_to_dict(farm, "farmId")
+        "data": farm_doc
     }), 201
 
 
@@ -492,6 +504,8 @@ def get_farms():
         Endpoint: GET /farms
 
         Query Parameters:
+            distance (optional): Search in this radius, default 50
+            q (optional): Search in any text of the farm and produce for the provided query
             city (optional): Filter by city
             state (optional): Filter by state
             location (optional): Splits into city and state
@@ -502,77 +516,175 @@ def get_farms():
         Response (200 OK)
     """
     db = client.farm_details
+    args = request.args
+    app.logger.debug(f"{request.remote_addr}: Request args received, {args}")
 
-    data = request.args
-    app.logger.info(f"{request.remote_addr}: Request args received, {data}")
+    # Parse and sanitize input parameters
+    try:
+        page = int(args.get('page', 1))
+        limit = int(np.clip(int(args.get('limit', 20)), 1, 100))
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "Invalid pagination parameters"}), 400
 
-    filter = {}
+    city = args.get('city')
+    state = args.get('state')
+    if location_str := args.get('location'):
+        parts = location_str.split(',')
+        city = parts[0].strip().upper() if parts[0] else None
+        state = parts[1].strip().upper() if len(parts) > 1 and parts[1] else None
+    
+    if city: city = city.strip().upper()
+    if state: state = state.strip().upper()
 
-    # Set the default page and limit
-    page = 1
-    limit = 20
+    distance_km = args.get('distance', 50, type=int)
+    categories_str = args.get('categories')
+    query_str = args.get('q') # TODO: Implement text search
 
-    # Create the filter, and fill the page and limit if they have been provided
-    for key in list(data.keys()):
-        if key == "city": # categories not implemented
-            city = data.get(key).upper().strip()
-        elif key == "state":
-            state = data.get(key).upper().strip()
-        elif key == "location":
-            location = str(data.get(key)).split(",")
-            city = location[0].upper().strip()
-            state = location[1].upper().strip()
-        elif key == "categories":
-            categories = data.get("categories")
-            farms_within_categories = []
-            if not isinstance(categories,list):
-                categories = categories.split(",")
-            
-            app.logger.info(categories)
-            
-            produce_within_categories = db.produce.find({"category": { "$in": categories }})
+    pipeline = []
+    
+    # Get farm IDs for category filter to apply later
+    farm_ids_from_category = None
+    if categories_str:
+        categories = [cat.strip() for cat in categories_str.split(',')]
+        produce_in_categories = db.produce.find(
+            {"category": {"$in": categories}},
+            {"farmId": 1}
+        )
+        farm_ids_from_category = {p['farmId'] for p in produce_in_categories}
 
-            produce_within_categories = [mongo_to_dict(produce, "produceId") for produce in produce_within_categories]
-
-            farms_within_categories = [ObjectId(produce["farmId"]) for produce in produce_within_categories]
-
-            filter["_id"] = {"$in": farms_within_categories}
-            app.logger.info(farms_within_categories)
-        elif key == "page":
-            page = int(data.get(key))
-        elif key == "limit":
-            limit = np.clip(int(data.get(key)),1,100)
-        else:
-            app.logger.info(f"    {request.remote_addr}: {key} ignored")
+    # If a location is provided, use the geospatial search path
+    if city:
+        location_query = {"city": city}
+        if state:
+            location_query["state"] = state
         
-    app.logger.info(filter)
-
-    # Create the pagination information
-    farm_count = int(db.farms.count_documents(filter))
-    page_count = int(np.ceil(limit/farm_count) if farm_count > 0 else 0)
-    page = int(np.clip(page,1,page_count if page_count > 0 else 1))
-    first_item = int((page-1)*limit+1)
-
-    # TODO: order by distance to current position
-    # FILTERING LOGIC
-    # IF THE city or state is anything other than none or "" then we need to find the geolocation of the given city or state
-    if city is not None and city != "":
-        analyticsdb = client.analytics
-        if state is not None and state != "":
-            address_in_city = analyticsdb.national_address_file.find_one({"city":city,"state":state})
-        else:
-            address_in_city = analyticsdb.national_address_file.find_one({"city":city})
+        center_point_doc = db.national_address_file.find_one(location_query)
         
+        if not (center_point_doc and 'location' in center_point_doc):
+            return jsonify({"success": True, "data": {"farms": [], "pagination": {
+                "currentPage": 1, "totalPages": 0, "totalItems": 0, "itemsPerPage": limit
+            }}}), 200
 
+        # Find all addresses within the given radius
+        pipeline.append({
+            '$geoNear': {
+                'near': center_point_doc['location'],
+                'distanceField': 'distance_in_meters',
+                'maxDistance': distance_km * 1000,
+                'spherical': True
+            }
+        })
 
-    cursor = db.farms.find(filter,skip=first_item-1,limit=limit)
-    farm_list = [mongo_to_dict(farm, "farmId") for farm in cursor]
+        # Join with farms using a nested pipeline for prioritized matching
+        pipeline.append({
+            '$lookup': {
+                'from': 'farms',
+                'let': {
+                    'addr_street': '$street',
+                    'addr_city': '$city',
+                    'addr_state': '$state',
+                    'addr_zip': '$zipcode'
+                },
+                'pipeline': [
+                    {
+                        '$match': {
+                            '$expr': {
+                                '$or': [
+                                    {'$and': [
+                                        {'$eq': ['$address.street', '$$addr_street']},
+                                        {'$eq': ['$address.city', '$$addr_city']},
+                                        {'$eq': ['$address.state', '$$addr_state']}
+                                    ]},
+                                    {'$eq': ['$address.zipCodeInt', '$$addr_zip']}
+                                ]
+                            }
+                        }
+                    },
+                    {'$addFields': {'match_priority': {'$cond': {
+                        'if': {'$and': [
+                            {'$eq': ['$address.street', '$$addr_street']},
+                            {'$eq': ['$address.city', '$$addr_city']},
+                            {'$eq': ['$address.state', '$$addr_state']}
+                        ]},
+                        'then': 1, 'else': 2
+                    }}}},
+                    {'$sort': {'match_priority': 1}},
+                    {'$limit': 1}
+                ],
+                'as': 'farm_match'
+            }
+        })
 
-    # Get the produce for each farm and add it in
-    for farm_id in range(len(farm_list)):
-        produce_list = db.produce.find({"farmId":ObjectId(farm_list[farm_id]["farmId"])})
-        produce_list = [mongo_to_dict(produce, "produceId") for produce in produce_list]
-        farm_list[farm_id]["produce"] = produce_list
+        # Continue with the location-based pipeline
+        pipeline.extend([
+            {'$match': {'farm_match': {'$ne': []}}},
+            {'$unwind': '$farm_match'},
+            {'$group': {
+                '_id': '$farm_match._id',
+                'farm_doc': {'$first': '$farm_match'},
+                'closest_address_distance_meters': {'$min': '$distance_in_meters'}
+            }},
+            {'$replaceRoot': {'newRoot': {'$mergeObjects': [
+                '$farm_doc',
+                {'distance': {'meters': '$closest_address_distance_meters'}}
+            ]}}},
+        ])
+        
+        match_filter = {}
+        if farm_ids_from_category is not None:
+            match_filter['_id'] = {'$in': list(farm_ids_from_category)}
+        
+        if query_str: pass # TODO
+
+        if match_filter:
+            pipeline.append({'$match': match_filter})
+
+        pipeline.extend([
+            {'$sort': {'distance.meters': 1}},
+            {'$addFields': {'distance.km': {'$divide': ['$distance.meters', 1000]}}},
+            {'$lookup': {'from': 'produce', 'localField': '_id', 'foreignField': 'farmId', 'as': 'produce'}}
+        ])
+        
+        target_collection = db.national_address_file
+
+    # Otherwise, use the simpler non-location search path
+    else:
+        match_filter = {}
+        if farm_ids_from_category is not None:
+            match_filter['_id'] = {'$in': list(farm_ids_from_category)}
+
+        if query_str: pass # TODO
+
+        if match_filter:
+            pipeline.append({'$match': match_filter})
+
+        pipeline.append({'$lookup': {
+            'from': 'produce', 'localField': '_id', 'foreignField': 'farmId', 'as': 'produce'
+        }})
+        target_collection = db.farms
+
+    # Add pagination to the pipeline
+    skip_amount = (page - 1) * limit
+    pipeline.append({
+        '$facet': {
+            'metadata': [{'$count': 'totalItems'}],
+            'data': [{'$skip': skip_amount}, {'$limit': limit}]
+        }
+    })
+
+    # Execute the aggregation
+    result = list(target_collection.aggregate(pipeline, allowDiskUse=True))
+
+    # Format and return the response
+    if not result or not result[0]['metadata']:
+        total_items = 0
+        farm_list = []
+    else:
+        total_items = result[0]['metadata'][0]['totalItems']
+        farm_list = [mongo_to_dict(farm, 'farmId') for farm in result[0]['data']]
+
+    total_pages = int(np.ceil(total_items / limit)) if total_items > 0 else 0
+    page = min(page, total_pages) if total_pages > 0 else 1
 
     return jsonify({
         "success": True,
@@ -580,8 +692,8 @@ def get_farms():
             "farms": farm_list,
             "pagination": {
                 "currentPage": page,
-                "totalPages": page_count,
-                "totalItems": farm_count,
+                "totalPages": total_pages,
+                "totalItems": total_items,
                 "itemsPerPage": limit
             }
         }
@@ -627,12 +739,25 @@ def update_farm(farmId : str):
     
     app.logger.info(f"Request data, {data}")
     
-    # Create the set data dictionary
+    # Create the set data dictionary for the update
     set_data = {}
-
-    modified_keys = data.keys()
-    for modified_key in modified_keys:
-        set_data[modified_key] = data.get(modified_key)
+    for key, value in data.items():
+        if key == 'address' and isinstance(value, dict):
+            # Handle nested address fields
+            for addr_key, addr_value in value.items():
+                if addr_key in ['street', 'city', 'state']:
+                    set_data[f'address.{addr_key}'] = str(addr_value).upper()
+                elif addr_key == 'zipCode':
+                    set_data['address.zipCode'] = addr_value
+                    try:
+                        set_data['address.zipCodeInt'] = int(addr_value)
+                    except (ValueError, TypeError):
+                        set_data['address.zipCodeInt'] = None
+                else:
+                    set_data[f'address.{addr_key}'] = addr_value
+        else:
+            # Handle top-level fields
+            set_data[key] = value
 
     set_data["modifiedAt"] = datetime.datetime.now()
 
@@ -645,11 +770,15 @@ def update_farm(farmId : str):
     # Get the farm data from mongodb
     farm = db.farms.find_one({"_id": ObjectId(farmId)})
 
+    # Convert to dict and replace ownerId with clerkId for the frontend
+    farm_doc = mongo_to_dict(farm, "farmId")
+    farm_doc["ownerId"] = g.clerk_id
+
     # Return the success message
     return jsonify({
         "success": True,
-        "message": "Produce updated successfully",
-        "data": mongo_to_dict(farm, "farmId")
+        "message": "Farm updated successfully",
+        "data": farm_doc
     }), 201
 
 @clerk_auth_required
