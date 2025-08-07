@@ -413,7 +413,6 @@ def get_my_farms():
         page = int(np.clip(page,1,page_count if page_count > 0 else 1))
         first_item = int((page-1)*limit+1)
 
-        # TODO: order by distance to current position
         cursor = db.farms.find(filter,skip=first_item-1,limit=limit)
         farm_list = [mongo_to_dict(farm, "farmId") for farm in cursor]
 
@@ -538,7 +537,7 @@ def get_farms():
 
     distance_km = args.get('distance', 50, type=int)
     categories_str = args.get('categories')
-    query_str = args.get('q') # TODO: Implement text search
+    query_str = args.get('q')
 
     pipeline = []
     
@@ -564,6 +563,19 @@ def get_farms():
             return jsonify({"success": True, "data": {"farms": [], "pagination": {
                 "currentPage": 1, "totalPages": 0, "totalItems": 0, "itemsPerPage": limit
             }}}), 200
+        
+        # Search the index for the text
+        if query_str:
+            pipeline.append({
+                '$search': {
+                    "index": "farm_text",
+                    "text": {
+                        "query": query_str,
+                        "path": {
+                            "wildcard": "*"
+                        }
+                    }
+            }})
 
         # Find all addresses within the given radius
         pipeline.append({
@@ -633,8 +645,6 @@ def get_farms():
         match_filter = {}
         if farm_ids_from_category is not None:
             match_filter['_id'] = {'$in': list(farm_ids_from_category)}
-        
-        if query_str: pass # TODO
 
         if match_filter:
             pipeline.append({'$match': match_filter})
@@ -653,7 +663,17 @@ def get_farms():
         if farm_ids_from_category is not None:
             match_filter['_id'] = {'$in': list(farm_ids_from_category)}
 
-        if query_str: pass # TODO
+        if query_str:
+            pipeline.append({
+                '$search': {
+                    "index": "farm_text",
+                    "text": {
+                        "query": query_str,
+                        "path": {
+                            "wildcard": "*"
+                        }
+                    }
+            }})
 
         if match_filter:
             pipeline.append({'$match': match_filter})
@@ -841,7 +861,7 @@ def get_farm(farmId : str):
 
     return jsonify({
         "success": True,
-        "data": farm # TODO: add exclusion list
+        "data": farm
     }), 200
 
 @app.route('/farms/<farmId>/produce', methods=["POST", "GET"])
@@ -899,7 +919,6 @@ def get_farm_produce(farmId : str):
     page = int(np.clip(page,1,page_count if page_count > 0 else 1))
     first_item = int((page-1)*limit+1)
 
-    # TODO: order by distance to current position
     cursor = db.produce.find(filter,skip=first_item-1,limit=limit)
     produce_list = [mongo_to_dict(produce, "produceId") for produce in cursor]
 
