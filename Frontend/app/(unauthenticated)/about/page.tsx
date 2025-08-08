@@ -48,8 +48,8 @@ export default function Page() {
               supermarket shelves right next to the farm where it originated.
             </p>
             <p className="text-gray-600 leading-relaxed">
-              By the time it reaches consumers, the produce isn't as fresh, and the
-              unnecessary freight costs are absorbed by buyers. We believe there's a
+              By the time it reaches consumers, the produce isn&apos;t as fresh, and the
+              unnecessary freight costs are absorbed by buyers. We believe there&apos;s a
               better way.
             </p>
             <p className="text-gray-600 leading-relaxed">
@@ -95,7 +95,7 @@ export default function Page() {
               <h3 className="text-xl font-semibold text-gray-900 mb-3">Transparency</h3>
               <p className="text-gray-600">
                 Providing clear information about where your food comes from
-                and how it's grown, building trust between farmers and consumers.
+                and how it&apos;s grown, building trust between farmers and consumers.
               </p>
             </div>
           </div>
@@ -107,7 +107,7 @@ export default function Page() {
             Join Our Community
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Whether you're a farmer looking to connect with local buyers or a consumer
+            Whether you&apos;re a farmer looking to connect with local buyers or a consumer
             seeking fresh, local produce, BuyingGood is here to help.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
