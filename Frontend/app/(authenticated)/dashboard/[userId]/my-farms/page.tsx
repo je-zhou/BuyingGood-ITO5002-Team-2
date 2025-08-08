@@ -5,6 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useApiClient } from "@/lib/api-client";
+import { FarmsDashboard } from "@/components/FarmsDashboard";
 
 interface Farm {
   farmId: string;
@@ -178,6 +179,9 @@ const FarmsContent = ({ userId }: { userId?: string }) => {
 
   return (
     <>
+      {/* Dashboard */}
+      <FarmsDashboard userId={userId} />
+
       {/* Farms Grid */}
       <div className="grid md:grid-cols-2 xl:grid-cols-3 auto-rows-[minmax(14rem,_1fr)] gap-4">
         <CreateFarmTile userId={userId} />
