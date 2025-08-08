@@ -218,11 +218,32 @@ function FarmTileSkeleton() {
 // Skeleton loader component for the whole farms grid
 function FarmsSkeletonLoader({ userId }: { userId?: string }) {
   return (
-    <div className="grid md:grid-cols-2 xl:grid-cols-3 auto-rows-[minmax(14rem,_1fr)] gap-4">
-      <CreateFarmTile userId={userId} />
-      {[...Array(2)].map((_, index) => (
-        <FarmTileSkeleton key={index} />
-      ))}
-    </div>
+    <>
+      {/* Dashboard Cards Skeleton */}
+      <div className="space-y-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="rounded-lg border border-gray-200 animate-pulse">
+              <div className="flex flex-row items-center justify-between space-y-0 p-6 pb-2">
+                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <div className="h-4 w-4 bg-gray-200 rounded"></div>
+              </div>
+              <div className="p-6 pt-0">
+                <div className="h-8 bg-gray-200 rounded w-16 mb-1"></div>
+                <div className="h-3 bg-gray-100 rounded w-32"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Farms Grid Skeleton */}
+      <div className="grid md:grid-cols-2 xl:grid-cols-3 auto-rows-[minmax(14rem,_1fr)] gap-4">
+        <CreateFarmTile userId={userId} />
+        {[...Array(2)].map((_, index) => (
+          <FarmTileSkeleton key={index} />
+        ))}
+      </div>
+    </>
   );
 }
