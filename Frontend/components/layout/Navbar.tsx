@@ -58,29 +58,17 @@ export default function Navbar() {
               Nearby Farms
             </Link>
             <button
-              onClick={() => scrollToSection("our-story")}
-              className="hover:text-primary cursor-pointer"
-            >
-              Our Story
-            </button>
-            <button
               onClick={() => scrollToSection("data-viz")}
               className="hover:text-primary cursor-pointer"
             >
               The Problem in Numbers
             </button>
-            <button
-              onClick={() => scrollToSection("our-solution")}
-              className="hover:text-primary cursor-pointer"
-            >
-              Our Solution
-            </button>
-            <button
-              onClick={() => scrollToSection("testimonials")}
-              className="hover:text-primary cursor-pointer"
-            >
-              Testimonials
-            </button>
+            <Link href={"/about"} className="hover:text-primary cursor-pointer">
+              About
+            </Link>
+            <Link href={"/contact"} className="hover:text-primary cursor-pointer">
+              Contact
+            </Link>
           </div>
 
           {/* Desktop CTA button */}
@@ -133,15 +121,6 @@ export default function Navbar() {
             </Link>
             <button
               onClick={() => {
-                scrollToSection("our-story");
-                setIsMenuOpen(false);
-              }}
-              className="hover:text-primary cursor-pointer text-left py-2"
-            >
-              Our Story
-            </button>
-            <button
-              onClick={() => {
                 scrollToSection("data-viz");
                 setIsMenuOpen(false);
               }}
@@ -149,24 +128,20 @@ export default function Navbar() {
             >
               The Problem in Numbers
             </button>
-            <button
-              onClick={() => {
-                scrollToSection("our-solution");
-                setIsMenuOpen(false);
-              }}
-              className="hover:text-primary cursor-pointer text-left py-2"
+            <Link 
+              href={"/about"} 
+              className="hover:text-primary cursor-pointer py-2"
+              onClick={() => setIsMenuOpen(false)}
             >
-              Our Solution
-            </button>
-            <button
-              onClick={() => {
-                scrollToSection("testimonials");
-                setIsMenuOpen(false);
-              }}
-              className="hover:text-primary cursor-pointer text-left py-2"
+              About
+            </Link>
+            <Link 
+              href={"/contact"} 
+              className="hover:text-primary cursor-pointer py-2"
+              onClick={() => setIsMenuOpen(false)}
             >
-              Testimonials
-            </button>
+              Contact
+            </Link>
             
             {/* Mobile CTA */}
             <div className="pt-4 border-t border-gray-200">

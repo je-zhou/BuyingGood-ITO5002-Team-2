@@ -1,5 +1,7 @@
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function OurSolution() {
   return (
@@ -29,6 +31,19 @@ export default function OurSolution() {
             height={400}
             className="rounded-lg border my-6"
           />
+        </div>
+        
+        <div className="flex gap-4 mt-8">
+          <Link href="/contact">
+            <Button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2">
+              Get in Touch
+            </Button>
+          </Link>
+          <Link href="/farms">
+            <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50 px-6 py-2">
+              Find Local Produce
+            </Button>
+          </Link>
         </div>
       </div>
     </div>
