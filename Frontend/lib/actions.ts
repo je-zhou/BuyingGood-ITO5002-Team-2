@@ -27,7 +27,8 @@ export async function sendContactEmail(formData: {
   try {
     const validatedData = contactFormSchema.parse(formData);
 
-    const { data, error } = await resend.emails.send({
+    // Send email to farmer
+    const { data: farmerData, error: farmerError } = await resend.emails.send({
       from: "BuyingGood <buyinggood@021-commerce.com.au>", // Replace with your verified domain
       to: [validatedData.farmEmail],
       subject: `New inquiry from ${validatedData.name} via Buying Good`,
@@ -54,12 +55,62 @@ export async function sendContactEmail(formData: {
       `,
     });
 
-    if (error) {
-      console.error("Resend error:", error);
-      return { success: false, error: "Failed to send email" };
+    if (farmerError) {
+      console.error("Resend error (farmer email):", farmerError);
+      return { success: false, error: "Failed to send email to farmer" };
     }
 
-    return { success: true, message: "Email sent successfully", id: data?.id };
+    // Send confirmation email to sender
+    const { data: senderData, error: senderError } = await resend.emails.send({
+      from: "BuyingGood <buyinggood@021-commerce.com.au>",
+      to: [validatedData.email],
+      subject: `Message sent to ${validatedData.farmName} - Confirmation`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Message Sent Successfully! 🌱</h2>
+          <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+            <p style="margin: 0; color: #155724; font-weight: 500;">
+              Your message has been successfully sent to <strong>${validatedData.farmName}</strong>!
+            </p>
+          </div>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #555;">What happens next?</h3>
+            <p style="color: #666; line-height: 1.6;">
+              The farmer will receive your inquiry and should be in touch with you soon. They can reply directly to your email address: <strong>${validatedData.email}</strong>
+            </p>
+          </div>
+
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #555;">Your message summary:</h3>
+            <p><strong>To:</strong> ${validatedData.farmName}</p>
+            <p><strong>From:</strong> ${validatedData.name}${validatedData.company ? ` (${validatedData.company})` : ""}</p>
+            <div style="margin-top: 15px; padding: 15px; background-color: white; border-radius: 4px;">
+              <p style="margin: 0; white-space: pre-wrap; color: #333;">${validatedData.message}</p>
+            </div>
+          </div>
+
+          <div style="text-align: center; margin-top: 30px; padding: 20px; background-color: #fff3cd; border-radius: 8px;">
+            <p style="margin: 0; color: #856404; font-size: 16px;">
+              Thank you for supporting local farms through BuyingGood! 🌾
+            </p>
+          </div>
+        </div>
+      `,
+    });
+
+    if (senderError) {
+      console.error("Resend error (confirmation email):", senderError);
+      // Don't fail the entire operation if confirmation email fails
+      console.warn("Confirmation email failed, but farmer email was sent successfully");
+    }
+
+    return { 
+      success: true, 
+      message: "Email sent successfully", 
+      farmerEmailId: farmerData?.id,
+      confirmationEmailId: senderData?.id 
+    };
   } catch (error) {
     console.error("Contact form error:", error);
 
