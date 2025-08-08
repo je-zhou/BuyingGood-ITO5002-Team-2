@@ -132,7 +132,7 @@ const generalContactFormSchema = z.object({
   email: z.email("Please enter a valid email address"),
   company: z.string().optional(),
   category: z.enum(["general", "testimonial", "careers"], {
-    required_error: "Please select a category.",
+    message: "Please select a category.",
   }),
   message: z.string().min(10, "Message must be at least 10 characters"),
 });
