@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, Route, Mail, Trophy } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Eye, Route, Mail } from "lucide-react";
 import { useApiClient } from "@/lib/api-client";
 
 interface DashboardMetrics {
   totalImpressions: number;
   kilometerseSaved: number;
+  co2Reduced: number;
   contactFormsReceived: number;
 }
 
@@ -28,9 +28,9 @@ export function FarmsDashboard({ userId }: FarmsDashboardProps) {
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     totalImpressions: 0,
     kilometerseSaved: 0,
+    co2Reduced: 0,
     contactFormsReceived: 0,
   });
-  const [leaderboard, setLeaderboard] = useState<FarmLeaderboard[]>([]);
   const [loading, setLoading] = useState(true);
 
   const api = useApiClient();
@@ -49,28 +49,10 @@ export function FarmsDashboard({ userId }: FarmsDashboardProps) {
         const simulatedMetrics: DashboardMetrics = {
           totalImpressions: Math.floor(Math.random() * 10000) + 1000,
           kilometerseSaved: Math.floor(Math.random() * 500) + 100,
+          co2Reduced: Math.floor(Math.random() * 200) + 50,
           contactFormsReceived: Math.floor(Math.random() * 50) + 10,
         };
 
-        // Fetch user's farms for the leaderboard
-        const farmsResponse = await api.getMyFarms();
-        
-        if (farmsResponse.success) {
-          const simulatedLeaderboard: FarmLeaderboard[] = farmsResponse.data.farms
-            .map((farm: { farmId: string; name: string }, index: number) => ({
-              farmId: farm.farmId,
-              farmName: farm.name,
-              impressions: Math.floor(Math.random() * 1000) + 50,
-              rank: index + 1,
-            }))
-            .sort((a: FarmLeaderboard, b: FarmLeaderboard) => b.impressions - a.impressions)
-            .map((farm: FarmLeaderboard, index: number) => ({
-              ...farm,
-              rank: index + 1,
-            }));
-
-          setLeaderboard(simulatedLeaderboard);
-        }
 
         setMetrics(simulatedMetrics);
       } catch (error) {
@@ -101,24 +83,6 @@ export function FarmsDashboard({ userId }: FarmsDashboardProps) {
             </Card>
           ))}
         </div>
-        
-        {/* Leaderboard Skeleton */}
-        <Card className="animate-pulse">
-          <CardHeader>
-            <div className="h-6 bg-gray-200 rounded w-32"></div>
-            <div className="h-4 bg-gray-100 rounded w-48"></div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex justify-between items-center">
-                  <div className="h-4 bg-gray-200 rounded w-32"></div>
-                  <div className="h-4 bg-gray-100 rounded w-16"></div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   }
@@ -140,17 +104,43 @@ export function FarmsDashboard({ userId }: FarmsDashboardProps) {
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Kilometers Saved</CardTitle>
-            <Route className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.kilometerseSaved.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              Estimated by local sourcing
-            </p>
-          </CardContent>
+        <Card className="py-0 gap-0">
+          <Tabs defaultValue="kilometers" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 rounded-t-xl rounded-b-none">
+              <TabsTrigger value="kilometers" className="text-xs">
+                <Route className="h-3 w-3 mr-1" />
+                Kilometers
+              </TabsTrigger>
+              <TabsTrigger value="co2" className="text-xs">
+                <span className="text-xs font-bold mr-1">CO₂</span>
+                Emissions
+              </TabsTrigger>
+            </TabsList>
+            <div className="p-6">
+              <TabsContent value="kilometers" className="mt-0 space-y-2">
+                <div className="flex items-baseline justify-between">
+                  <div className="text-2xl font-bold">{metrics.kilometerseSaved.toLocaleString()} km</div>
+                  <div className="text-sm text-green-600 font-medium">
+                    ≈ {Math.round(metrics.kilometerseSaved * 0.1)} trees saved
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Distance saved through local farm sourcing
+                </p>
+              </TabsContent>
+              <TabsContent value="co2" className="mt-0 space-y-2">
+                <div className="flex items-baseline justify-between">
+                  <div className="text-2xl font-bold">{metrics.co2Reduced.toLocaleString()} kg</div>
+                  <div className="text-sm text-green-600 font-medium">
+                    ≈ {Math.round(metrics.kilometerseSaved * 0.1)} trees saved
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Carbon emissions reduced by choosing local farms
+                </p>
+              </TabsContent>
+            </div>
+          </Tabs>
         </Card>
         
         <Card>
@@ -166,47 +156,6 @@ export function FarmsDashboard({ userId }: FarmsDashboardProps) {
           </CardContent>
         </Card>
       </div>
-
-      {/* Leaderboard */}
-      {leaderboard.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-yellow-500" />
-              Farm Leaderboard
-            </CardTitle>
-            <CardDescription>
-              Farms ranked by total impressions
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[60px]">Rank</TableHead>
-                  <TableHead>Farm Name</TableHead>
-                  <TableHead className="text-right">Impressions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {leaderboard.slice(0, 5).map((farm) => (
-                  <TableRow key={farm.farmId}>
-                    <TableCell className="font-medium">
-                      <Badge variant={farm.rank === 1 ? "default" : "secondary"}>
-                        #{farm.rank}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">{farm.farmName}</TableCell>
-                    <TableCell className="text-right">
-                      {farm.impressions.toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
