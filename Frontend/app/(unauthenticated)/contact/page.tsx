@@ -107,9 +107,9 @@ export default function ContactPage() {
             Get in Touch
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            We're here to help connect you with local farmers, answer your questions, 
-            and support you in making sustainable food choices. Whether you're a farmer, 
-            retailer, or consumer, we'd love to hear from you.
+            We&apos;re here to help connect you with local farmers, answer your questions, 
+            and support you in making sustainable food choices. Whether you&apos;re a farmer, 
+            retailer, or consumer, we&apos;d love to hear from you.
           </p>
         </div>
 
@@ -153,7 +153,7 @@ export default function ContactPage() {
               Send us a Message
             </h2>
             <p className="text-gray-600 leading-relaxed">
-              Fill out the form below and we'll get back to you as soon as possible. 
+              Fill out the form below and we&apos;ll get back to you as soon as possible. 
               We typically respond within 24-48 hours.
             </p>
           </div>

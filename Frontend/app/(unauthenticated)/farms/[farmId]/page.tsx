@@ -447,7 +447,7 @@ export default function FarmDetailPage({
                 Place an Order
               </h3>
               <p className="text-gray-600 text-sm leading-relaxed">
-                Ready to order fresh produce directly from {farm.name}? Send them a message with your requirements and they'll get back to you with availability and pricing.
+                Ready to order fresh produce directly from {farm.name}? Send them a message with your requirements and they&apos;ll get back to you with availability and pricing.
               </p>
             </div>
             <Form {...form}>

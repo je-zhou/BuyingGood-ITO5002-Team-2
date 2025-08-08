@@ -157,7 +157,7 @@ export default function Testimonials() {
               Have Your Own Story to Share?
             </h3>
             <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-              Have feedback? Let us know how BuyingGood has worked for you. We'd love to hear about your experience!
+              Have feedback? Let us know how BuyingGood has worked for you. We&apos;d love to hear about your experience!
             </p>
             <Link href="/contact">
               <Button size="lg" className="bg-green-600 hover:bg-green-700 text-white">
