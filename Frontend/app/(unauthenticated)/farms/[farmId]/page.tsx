@@ -362,7 +362,21 @@ export default function FarmDetailPage({
                 <div className="flex items-start gap-3 text-gray-700">
                   <MapPin className="w-4 h-4 mt-1 text-gray-500" />
                   <div>
-                    <div className="font-medium text-blue-600 underline cursor-pointer">
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                        [
+                          farm.address?.street,
+                          farm.address?.city,
+                          farm.address?.state,
+                          farm.address?.zipCode,
+                        ]
+                          .filter(Boolean)
+                          .join(", ")
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                    >
                       {[
                         farm.address?.street,
                         farm.address?.city,
@@ -371,16 +385,26 @@ export default function FarmDetailPage({
                       ]
                         .filter(Boolean)
                         .join(", ")}
-                    </div>
+                    </a>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-gray-700">
                   <Phone className="w-4 h-4 text-gray-500" />
-                  <span>{farm.contact_phone}</span>
+                  <a 
+                    href={`tel:${farm.contact_phone}`}
+                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    {farm.contact_phone}
+                  </a>
                 </div>
                 <div className="flex items-center gap-3 text-gray-700">
                   <Mail className="w-4 h-4 text-gray-500" />
-                  <span>{farm.contact_email}</span>
+                  <a 
+                    href={`mailto:${farm.contact_email}`}
+                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    {farm.contact_email}
+                  </a>
                 </div>
                 <div className="flex items-start gap-3 text-gray-700">
                   <Clock className="w-4 h-4 mt-1 text-gray-500" />
@@ -418,6 +442,14 @@ export default function FarmDetailPage({
 
           {/* Contact Form */}
           <div className="max-w-md mx-auto mb-20">
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Place an Order
+              </h3>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                Ready to order fresh produce directly from {farm.name}? Send them a message with your requirements and they'll get back to you with availability and pricing.
+              </p>
+            </div>
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
