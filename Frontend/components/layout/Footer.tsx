@@ -25,36 +25,42 @@ export default function Footer() {
       <div className="w-full max-w-screen-2xl mx-auto flex flex-col items-center gap-4">
         {/* NavLinks */}
         <div className="flex justify-center items-center">
-          <div className="flex flex-wrap justify-center items-center gap-2 md:gap-4 text-sm md:text-base">
-            <Link href="/farms" className="hover:text-primary cursor-pointer px-2 py-1">
+          <div className="flex flex-wrap justify-center items-center gap-1 md:gap-2 text-sm md:text-base">
+            <Link href="/farms" className="hover:text-primary cursor-pointer px-1 py-1">
               Nearby Farms
             </Link>
             <button
               onClick={() => scrollToSection("our-story")}
-              className="hover:text-primary cursor-pointer px-2 py-1"
+              className="hover:text-primary cursor-pointer px-1 py-1"
             >
               Our Story
             </button>
             <button
               onClick={() => scrollToSection("data-viz")}
-              className="hover:text-primary cursor-pointer px-2 py-1 text-center"
+              className="hover:text-primary cursor-pointer px-1 py-1 text-center"
             >
               The Problem in Numbers
             </button>
             <button
               onClick={() => scrollToSection("our-solution")}
-              className="hover:text-primary cursor-pointer px-2 py-1"
+              className="hover:text-primary cursor-pointer px-1 py-1"
             >
               Our Solution
             </button>
             <button
               onClick={() => scrollToSection("testimonials")}
-              className="hover:text-primary cursor-pointer px-2 py-1"
+              className="hover:text-primary cursor-pointer px-1 py-1"
             >
               Testimonials
             </button>
-            <Link href="/privacy" className="hover:text-primary cursor-pointer px-2 py-1">
-              Privacy Policy
+            <Link href="/about" className="hover:text-primary cursor-pointer px-1 py-1">
+              About
+            </Link>
+            <Link href="/contact" className="hover:text-primary cursor-pointer px-1 py-1">
+              Contact
+            </Link>
+            <Link href="/privacy" className="hover:text-primary cursor-pointer px-1 py-1">
+              Privacy
             </Link>
           </div>
         </div>

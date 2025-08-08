@@ -53,7 +53,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Nav Links */}
-          <div className="hidden lg:flex items-center gap-8 xl:gap-12">
+          <div className="hidden lg:flex items-center gap-4 xl:gap-6">
             <Link href={"/farms"} className="hover:text-primary cursor-pointer">
               Nearby Farms
             </Link>
@@ -68,6 +68,9 @@ export default function Navbar() {
             </Link>
             <Link href={"/contact"} className="hover:text-primary cursor-pointer">
               Contact
+            </Link>
+            <Link href={"/privacy"} className="hover:text-primary cursor-pointer">
+              Privacy
             </Link>
           </div>
 
@@ -141,6 +144,13 @@ export default function Navbar() {
               onClick={() => setIsMenuOpen(false)}
             >
               Contact
+            </Link>
+            <Link 
+              href={"/privacy"} 
+              className="hover:text-primary cursor-pointer py-2"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Privacy
             </Link>
             
             {/* Mobile CTA */}
