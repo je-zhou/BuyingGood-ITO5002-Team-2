@@ -30,6 +30,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Combobox } from "@/components/ui/combobox";
+import { australianStatesOptions, getSuburbsOptionsForState, getPostcodeForSuburb, type AustralianState } from "@/lib/australian-locations";
 import SimpleImageUpload from "@/components/ui/simple-image-upload";
 import { Farm, Produce } from "@/lib/api-types";
 
@@ -62,6 +64,7 @@ export default function FarmManagement({
   const [editedFarm, setEditedFarm] = useState<Farm | null>(null);
   const [farmImages, setFarmImages] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [availableSuburbsOptions, setAvailableSuburbsOptions] = useState<{value: string; label: string}[]>([]);
 
   useEffect(() => {
     params.then(setResolvedParams);
@@ -100,6 +103,14 @@ export default function FarmManagement({
       fetchFarm();
     }
   }, [isLoaded, user, resolvedParams, fetchFarm]);
+
+  // Initialize suburbs when farm data loads
+  useEffect(() => {
+    if (editedFarm?.address?.state) {
+      const suburbsOptions = getSuburbsOptionsForState(editedFarm.address.state as AustralianState);
+      setAvailableSuburbsOptions(suburbsOptions);
+    }
+  }, [editedFarm?.address?.state]);
 
   const handleDeleteFarm = async () => {
     if (!farm || !resolvedParams) return;
@@ -161,17 +172,53 @@ export default function FarmManagement({
 
     if (field.startsWith("address.")) {
       const addressField = field.split(".")[1];
-      setEditedFarm((prev) =>
-        prev
-          ? {
-              ...prev,
-              address: {
-                ...prev.address,
-                [addressField]: value,
-              },
-            }
-          : null
-      );
+      
+      // Handle state change - update available suburbs
+      if (addressField === 'state') {
+        const suburbsOptions = getSuburbsOptionsForState(value as AustralianState);
+        setAvailableSuburbsOptions(suburbsOptions);
+        // Clear city and zipCode when state changes
+        setEditedFarm((prev) =>
+          prev
+            ? {
+                ...prev,
+                address: {
+                  ...prev.address,
+                  state: value,
+                  city: '',
+                  zipCode: ''
+                },
+              }
+            : null
+        );
+      } else if (addressField === 'city' && editedFarm.address?.state) {
+        // Handle suburb/city change - auto-fill postcode
+        const postcode = getPostcodeForSuburb(editedFarm.address.state as AustralianState, value);
+        setEditedFarm((prev) =>
+          prev
+            ? {
+                ...prev,
+                address: {
+                  ...prev.address,
+                  city: value,
+                  zipCode: postcode || prev.address?.zipCode || ''
+                },
+              }
+            : null
+        );
+      } else {
+        setEditedFarm((prev) =>
+          prev
+            ? {
+                ...prev,
+                address: {
+                  ...prev.address,
+                  [addressField]: value,
+                },
+              }
+            : null
+        );
+      }
     } else {
       setEditedFarm((prev) =>
         prev
@@ -519,34 +566,36 @@ export default function FarmManagement({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label
-                      htmlFor="city"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      City
-                    </Label>
-                    <Input
-                      id="city"
-                      value={editedFarm?.address?.city || ""}
-                      onChange={(e) =>
-                        handleFarmInputChange("address.city", e.target.value)
-                      }
-                      placeholder="Enter city"
-                    />
-                  </div>
-                  <div>
-                    <Label
                       htmlFor="state"
                       className="text-sm font-medium text-gray-700"
                     >
                       State
                     </Label>
-                    <Input
-                      id="state"
+                    <Combobox
+                      options={australianStatesOptions}
                       value={editedFarm?.address?.state || ""}
-                      onChange={(e) =>
-                        handleFarmInputChange("address.state", e.target.value)
-                      }
-                      placeholder="Enter state"
+                      onValueChange={(value) => handleFarmInputChange("address.state", value)}
+                      placeholder="Select or type state"
+                      searchPlaceholder="Search states..."
+                      allowCustom={true}
+                    />
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="city"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Suburb/City
+                    </Label>
+                    <Combobox
+                      options={availableSuburbsOptions}
+                      value={editedFarm?.address?.city || ""}
+                      onValueChange={(value) => handleFarmInputChange("address.city", value)}
+                      placeholder={editedFarm?.address?.state ? "Select or type suburb/city" : "Select state first"}
+                      searchPlaceholder="Search suburbs..."
+                      emptyText={editedFarm?.address?.state ? "No suburbs found. Type to add custom." : "Please select a state first"}
+                      allowCustom={true}
+                      disabled={!editedFarm?.address?.state}
                     />
                   </div>
                 </div>
@@ -716,7 +765,7 @@ export default function FarmManagement({
                         htmlFor="zipCode"
                         className="text-sm font-medium text-gray-700"
                       >
-                        Zip Code
+                        Postcode
                       </Label>
                       <Input
                         id="zipCode"
@@ -727,7 +776,7 @@ export default function FarmManagement({
                             e.target.value
                           )
                         }
-                        placeholder="Enter zip code"
+                        placeholder="Auto-filled when suburb selected"
                         className="mt-1"
                       />
                     </div>

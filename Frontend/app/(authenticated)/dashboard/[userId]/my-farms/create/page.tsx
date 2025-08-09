@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Save } from "lucide-react";
+import { australianStatesOptions, getSuburbsOptionsForState, getPostcodeForSuburb, type AustralianState } from "@/lib/australian-locations";
+import { Combobox } from "@/components/ui/combobox";
 import SimpleImageUpload from "@/components/ui/simple-image-upload";
 
 interface CreateFarmData {
@@ -45,6 +47,7 @@ export default function CreateFarm({ params }: { params: Promise<{ userId: strin
     opening_hours: "",
     images: []
   });
+  const [availableSuburbsOptions, setAvailableSuburbsOptions] = useState<{value: string; label: string}[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
@@ -62,6 +65,37 @@ export default function CreateFarm({ params }: { params: Promise<{ userId: strin
           [addressField]: value
         }
       }));
+      
+      // Handle state change - update available suburbs
+      if (addressField === 'state' && typeof value === 'string') {
+        const suburbsOptions = getSuburbsOptionsForState(value as AustralianState);
+        setAvailableSuburbsOptions(suburbsOptions);
+        // Clear city and zipCode when state changes
+        setFormData(prev => ({
+          ...prev,
+          address: {
+            ...prev.address,
+            state: value,
+            city: '',
+            zipCode: ''
+          }
+        }));
+      }
+      
+      // Handle suburb/city change - auto-fill postcode
+      if (addressField === 'city' && typeof value === 'string' && formData.address.state) {
+        const postcode = getPostcodeForSuburb(formData.address.state as AustralianState, value);
+        if (postcode) {
+          setFormData(prev => ({
+            ...prev,
+            address: {
+              ...prev.address,
+              city: value,
+              zipCode: postcode
+            }
+          }));
+        }
+      }
     } else {
       setFormData(prev => ({
         ...prev,
@@ -271,37 +305,45 @@ export default function CreateFarm({ params }: { params: Promise<{ userId: strin
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="city">City *</Label>
-                    <Input
-                      id="city"
-                      type="text"
-                      value={formData.address.city}
-                      onChange={(e) => handleInputChange('address.city', e.target.value)}
-                      className={errors['address.city'] ? 'border-red-500' : ''}
-                    />
-                    {errors['address.city'] && <p className="text-red-500 text-sm">{errors['address.city']}</p>}
-                  </div>
-
-                  <div className="space-y-2">
                     <Label htmlFor="state">State *</Label>
-                    <Input
-                      id="state"
-                      type="text"
+                    <Combobox
+                      options={australianStatesOptions}
                       value={formData.address.state}
-                      onChange={(e) => handleInputChange('address.state', e.target.value)}
+                      onValueChange={(value) => handleInputChange('address.state', value)}
+                      placeholder="Select or type state"
+                      searchPlaceholder="Search states..."
+                      allowCustom={true}
                       className={errors['address.state'] ? 'border-red-500' : ''}
                     />
                     {errors['address.state'] && <p className="text-red-500 text-sm">{errors['address.state']}</p>}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="zipCode">Zip Code *</Label>
+                    <Label htmlFor="city">Suburb/City *</Label>
+                    <Combobox
+                      options={availableSuburbsOptions}
+                      value={formData.address.city}
+                      onValueChange={(value) => handleInputChange('address.city', value)}
+                      placeholder={formData.address.state ? "Select or type suburb/city" : "Select state first"}
+                      searchPlaceholder="Search suburbs..."
+                      emptyText={formData.address.state ? "No suburbs found. Type to add custom." : "Please select a state first"}
+                      allowCustom={true}
+                      disabled={!formData.address.state}
+                      className={errors['address.city'] ? 'border-red-500' : ''}
+                    />
+                    {errors['address.city'] && <p className="text-red-500 text-sm">{errors['address.city']}</p>}
+                    {!formData.address.state && <p className="text-gray-500 text-sm">Please select a state first</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="zipCode">Postcode *</Label>
                     <Input
                       id="zipCode"
                       type="text"
                       value={formData.address.zipCode}
                       onChange={(e) => handleInputChange('address.zipCode', e.target.value)}
                       className={errors['address.zipCode'] ? 'border-red-500' : ''}
+                      placeholder="Auto-filled when suburb selected"
                     />
                     {errors['address.zipCode'] && <p className="text-red-500 text-sm">{errors['address.zipCode']}</p>}
                   </div>
@@ -339,7 +381,7 @@ export default function CreateFarm({ params }: { params: Promise<{ userId: strin
               <SimpleImageUpload
                 value={formData.images}
                 onChange={(images) => handleInputChange('images', images)}
-                maxFiles={5}
+                maxFiles={6}
                 folder="farms" 
                 disabled={saving}
               />
