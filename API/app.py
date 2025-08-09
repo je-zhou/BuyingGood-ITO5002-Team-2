@@ -54,8 +54,8 @@ try:
     app.logger.info("Pinged your deployment. You successfully connected to MongoDB!")
 except Exception as e:
     app.logger.info(e)
-
-
+    
+  
 """ Clerk Authentication """
 
 from clerk_backend_api import Clerk
@@ -475,10 +475,29 @@ def create_farm():
             address['zipCodeInt'] = int(address.get('zipCode'))
         except (ValueError, TypeError, AttributeError):
             address['zipCodeInt'] = None
+    
+    # Search for the address in the register
+    # Attempt 1, full address:
+    location_query = {}
+    location_query["street"] = address['street']
+    location_query["city"] = address["city"]
+    location_query["zipcode"] = address["zipCodeInt"]
+    location_query["state"] = address["state"]
+
+    while not center_point_doc or location_query.keys() == []:
+        center_point_doc = db.national_address_file.find_one(location_query)
+        location_query.pop(location_query.keys()[0])
+    
+    if not center_point_doc:
+        app.logger.warning("Address not found!")
+        center_point = {"type": "Point", "coordinates": [0.0,0.0]}
+    else:
+        center_point = center_point_doc['location']
 
     # Add the additional fields
     data["ownerId"] = ObjectId(g.user_id)
     data["createdAt"] = datetime.datetime.now()
+    data["location"] = center_point
     data["metrics"] = {
         "profileViews": 0,
         "contactForms": 0,
@@ -572,9 +591,9 @@ def get_farms():
         )
         farm_ids_from_category = {p['farmId'] for p in produce_in_categories}
 
+    target_collection = db.farms
     # Path A: Location-based search
     if s_city or s_zipcode:
-        target_collection = db.national_address_file
         location_query = {}
         if s_city:
             location_query["city"] = s_city
@@ -588,83 +607,58 @@ def get_farms():
                 "currentPage": 1, "totalPages": 0, "totalItems": 0, "itemsPerPage": limit
             }}}), 200
 
-        # Start pipeline with $geoNear
-        pipeline.append({
-            '$geoNear': {
-                'near': center_point_doc['location'],
-                'distanceField': 'distance_in_meters',
-                'maxDistance': distance_km * 1000,
-                'spherical': True
+        # Search for any farms matching the distance criteria
+        search_stage = {
+            "$search": {
+                "index": "farm_text",
+                "compound": {
+                    "filter": [{
+                        "geoWithin": {
+                            "circle": {
+                                "center": {
+                                    "type": "Point",
+                                    "coordinates": center_point_doc['location']['coordinates']
+                                },
+                                "radius": distance_km * 1000
+                            },
+                            "path": "location"
+                        }
+                    }]
+                }
             }
-        })
+        }
 
-        # Build the nested pipeline for the lookup
-        lookup_pipeline = []
+        # Add the query to match on the query string if provided
         if query_str:
-            lookup_pipeline.append({
-                '$search': {
-                    "index": "farm_text",
-                    "text": {
-                        "query": query_str,
-                        "path": {"wildcard": "*"}
+            search_stage["$search"]["compound"]["must"] = [{
+                "text": {
+                    "query": query_str,
+                    "path": {"wildcard": "*"}
+                }
+            }]
+
+        pipeline.append(search_stage)
+
+        # Record the distance between the farm and the provided location
+        pipeline.append({
+            "$addFields": {
+                "distance": {
+                    "$sqrt": {
+                        "$add": [
+                            { "$pow": [ { "$subtract": [ { "$arrayElemAt": [ "$location.coordinates", 0 ] }, { "$arrayElemAt": [ center_point_doc['location']['coordinates'], 0 ] } ] }, 2 ] },
+                            { "$pow": [ { "$subtract": [ { "$arrayElemAt": [ "$location.coordinates", 1 ] }, { "$arrayElemAt": [ center_point_doc['location']['coordinates'], 1 ] } ] }, 2 ] }
+                        ]
                     }
                 }
-            })
-        
-        # Add the address matching logic after the search
-        lookup_pipeline.extend([
-            {'$match': {'$expr': {'$or': [
-                {'$and': [
-                    {'$eq': ['$address.street', '$$addr_street']},
-                    {'$eq': ['$address.city', '$$addr_city']},
-                    {'$eq': ['$address.state', '$$addr_state']}
-                ]},
-                {'$eq': ['$address.zipCodeInt', '$$addr_zip']}
-            ]}}},
-            {'$addFields': {'match_priority': {'$cond': {
-                'if': {'$and': [
-                    {'$eq': ['$address.street', '$$addr_street']},
-                    {'$eq': ['$address.city', '$$addr_city']},
-                    {'$eq': ['$address.state', '$$addr_state']}
-                ]},
-                'then': 1, 'else': 2
-            }}}},
-            {'$sort': {'match_priority': 1}},
-            {'$limit': 1}
-        ])
-
-        pipeline.append({
-            '$lookup': {
-                'from': 'farms',
-                'let': {
-                    'addr_street': '$street',
-                    'addr_city': '$city',
-                    'addr_state': '$state',
-                    'addr_zip': '$zipcode'
-                },
-                'pipeline': lookup_pipeline,
-                'as': 'farm_match'
             }
         })
 
-        # Continue with the rest of the location-based pipeline
-        pipeline.extend([
-            {'$match': {'farm_match': {'$ne': []}}},
-            {'$unwind': '$farm_match'},
-            {'$group': {
-                '_id': '$farm_match._id',
-                'farm_doc': {'$first': '$farm_match'},
-                'closest_address_distance_meters': {'$min': '$distance_in_meters'}
-            }},
-            {'$replaceRoot': {'newRoot': {'$mergeObjects': [
-                '$farm_doc',
-                {'distance': {'meters': '$closest_address_distance_meters'}}
-            ]}}}
-        ])
+        pipeline.append({
+            "$sort": {"distance": 1}
+        })
 
     # Path B: Search-only
     elif query_str:
-        target_collection = db.farms
         pipeline.append({
             '$search': {
                 "index": "farm_text",
@@ -677,7 +671,7 @@ def get_farms():
     
     # Path C: No location, no search
     else:
-        target_collection = db.farms
+        pass
 
     # Apply category filter after main search/geo logic
     match_filter = {}
@@ -707,6 +701,8 @@ def get_farms():
             'data': [{'$skip': skip_amount}, {'$limit': limit}]
         }
     })
+
+    print(pipeline)
 
     # Execute the aggregation
     result = list(target_collection.aggregate(pipeline, allowDiskUse=True))
@@ -791,6 +787,26 @@ def update_farm(farmId : str):
                         set_data['address.zipCodeInt'] = None
                 else:
                     set_data[f'address.{addr_key}'] = addr_value
+                    
+            # Search for the address in the register
+            # Attempt 1, full address:
+            location_query = {}
+            location_query["street"] = set_data['address.street']
+            location_query["city"] = set_data["address.city"]
+            location_query["zipcode"] = set_data["address.zipCodeInt"]
+            location_query["state"] = set_data["address.state"]
+
+            while not center_point_doc or location_query.keys() == []:
+                center_point_doc = db.national_address_file.find_one(location_query)
+                location_query.pop(location_query.keys()[0])
+            
+            if not center_point_doc:
+                app.logger.warning("Address not found!")
+                center_point = {"type": "Point", "coordinates": [0.0,0.0]}
+            else:
+                center_point = center_point_doc['location']
+            
+            set_data['location'] = center_point
         else:
             # Handle top-level fields
             set_data[key] = value
