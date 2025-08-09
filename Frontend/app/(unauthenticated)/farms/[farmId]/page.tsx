@@ -27,7 +27,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
-import { unauthenticatedApiClient } from "@/lib/api-client";
+import { unauthenticatedApiClient, useApiClient } from "@/lib/api-client";
 import { Farm } from "@/lib/api-types";
 import { sendContactEmail } from "@/lib/actions";
 import Image from "next/image";
@@ -89,6 +89,8 @@ export default function FarmDetailPage({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const api = useApiClient();
+
   const form = useForm<z.infer<typeof contactFormSchema>>({
     resolver: zodResolver(contactFormSchema),
     defaultValues: {
@@ -116,6 +118,11 @@ export default function FarmDetailPage({
       });
 
       if (result.success) {
+        // Track the contact form submission in background (fire-and-forget)
+        api.trackContactSubmission(farm.farmId).catch((trackingError) => {
+          console.log("Failed to track contact submission:", trackingError);
+        });
+
         const randomMessage =
           encouragingMessages[
             Math.floor(Math.random() * encouragingMessages.length)
@@ -164,6 +171,11 @@ export default function FarmDetailPage({
           notFound();
         }
         setFarm(farmData);
+        
+        // Track the profile view in background (fire-and-forget)
+        api.trackProfileView(resolvedParams.farmId).catch((trackingError) => {
+          console.log("Failed to track profile view:", trackingError);
+        });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load farm");
       } finally {
@@ -172,7 +184,7 @@ export default function FarmDetailPage({
     };
 
     loadFarm();
-  }, [params]);
+  }, [params, api]);
 
   if (loading) {
     return (

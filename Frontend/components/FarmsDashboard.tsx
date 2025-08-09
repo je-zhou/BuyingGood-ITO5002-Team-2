@@ -4,13 +4,14 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Eye, Route, Mail } from "lucide-react";
-import { useApiClient } from "@/lib/api-client";
+import { Farm } from "@/lib/api-types";
 
 interface DashboardMetrics {
-  totalImpressions: number;
+  totalProfileViews: number;
   kilometerseSaved: number;
   co2Reduced: number;
   contactFormsReceived: number;
+  farmCount: number;
 }
 
 interface FarmLeaderboard {
@@ -22,48 +23,56 @@ interface FarmLeaderboard {
 
 interface FarmsDashboardProps {
   userId?: string;
+  farms?: Farm[];
 }
 
-export function FarmsDashboard({ userId }: FarmsDashboardProps) {
+export function FarmsDashboard({ farms }: FarmsDashboardProps) {
   const [metrics, setMetrics] = useState<DashboardMetrics>({
-    totalImpressions: 0,
+    totalProfileViews: 0,
     kilometerseSaved: 0,
     co2Reduced: 0,
     contactFormsReceived: 0,
+    farmCount: 0,
   });
   const [loading, setLoading] = useState(true);
 
-  const api = useApiClient();
-
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      if (!userId) return;
-
-      try {
+    const calculateMetrics = () => {
+      if (!farms) {
         setLoading(true);
-        
-        // Since we don't have specific metrics endpoints, we'll simulate the data
-        // In a real implementation, you would call actual API endpoints
-        
-        // Simulate fetching metrics
-        const simulatedMetrics: DashboardMetrics = {
-          totalImpressions: Math.floor(Math.random() * 10000) + 1000,
-          kilometerseSaved: Math.floor(Math.random() * 500) + 100,
-          co2Reduced: Math.floor(Math.random() * 200) + 50,
-          contactFormsReceived: Math.floor(Math.random() * 50) + 10,
-        };
-
-
-        setMetrics(simulatedMetrics);
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-      } finally {
-        setLoading(false);
+        return;
       }
+
+      // Calculate aggregated metrics from individual farms
+      let totalProfileViews = 0;
+      let totalContactForms = 0;
+      
+      farms.forEach(farm => {
+        const farmMetrics = farm.metrics;
+        if (farmMetrics) {
+          totalProfileViews += farmMetrics.profileViews || 0;
+          totalContactForms += farmMetrics.contactForms || 0;
+        }
+      });
+
+      // Calculate estimated environmental impact
+      // Assumptions: avg 10km saved per farm view, 0.21kg CO2 per km
+      const kilometerseSaved = totalProfileViews * 10;
+      const co2Reduced = kilometerseSaved * 0.21;
+
+      setMetrics({
+        totalProfileViews,
+        contactFormsReceived: totalContactForms,
+        kilometerseSaved: Math.round(kilometerseSaved),
+        co2Reduced: Math.round(co2Reduced * 10) / 10, // Round to 1 decimal
+        farmCount: farms.length,
+      });
+
+      setLoading(false);
     };
 
-    fetchDashboardData();
-  }, [userId, api]);
+    calculateMetrics();
+  }, [farms]);
 
   if (loading) {
     return (
@@ -97,7 +106,7 @@ export function FarmsDashboard({ userId }: FarmsDashboardProps) {
             <Eye className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics.totalImpressions.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{metrics.totalProfileViews.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               Views across all your farms
             </p>

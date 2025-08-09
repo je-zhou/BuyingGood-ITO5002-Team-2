@@ -5,24 +5,8 @@ import { useUser } from "@clerk/nextjs";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useApiClient } from "@/lib/api-client";
+import { Farm } from "@/lib/api-types";
 import { FarmsDashboard } from "@/components/FarmsDashboard";
-
-interface Farm {
-  farmId: string;
-  name: string;
-  description: string;
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
-  contact_email: string;
-  contact_phone: string;
-  opening_hours: string;
-  ownerId: string;
-  createdAt: string;
-}
 
 export default function FarmsPage({
   params,
@@ -78,7 +62,7 @@ function FarmTile({ farm, userId }: { farm: Farm; userId?: string }) {
         <div className="leading-none">
           <p className="font-semibold">{farm.name}</p>
           <p className="text-gray-400 text-sm">
-            {farm.address.city}, {farm.address.state}
+            {farm.address?.city}, {farm.address?.state}
           </p>
         </div>
       </div>
@@ -180,7 +164,7 @@ const FarmsContent = ({ userId }: { userId?: string }) => {
   return (
     <>
       {/* Dashboard */}
-      <FarmsDashboard userId={userId} />
+      <FarmsDashboard userId={userId} farms={farms} />
 
       {/* Farms Grid */}
       <div className="grid md:grid-cols-2 xl:grid-cols-3 auto-rows-[minmax(14rem,_1fr)] gap-4">
@@ -219,23 +203,8 @@ function FarmTileSkeleton() {
 function FarmsSkeletonLoader({ userId }: { userId?: string }) {
   return (
     <>
-      {/* Dashboard Cards Skeleton */}
-      <div className="space-y-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="rounded-lg border border-gray-200 animate-pulse">
-              <div className="flex flex-row items-center justify-between space-y-0 p-6 pb-2">
-                <div className="h-4 bg-gray-200 rounded w-24"></div>
-                <div className="h-4 w-4 bg-gray-200 rounded"></div>
-              </div>
-              <div className="p-6 pt-0">
-                <div className="h-8 bg-gray-200 rounded w-16 mb-1"></div>
-                <div className="h-3 bg-gray-100 rounded w-32"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Dashboard Cards Skeleton - pass undefined farms to show loading state */}
+      <FarmsDashboard userId={userId} farms={undefined} />
 
       {/* Farms Grid Skeleton */}
       <div className="grid md:grid-cols-2 xl:grid-cols-3 auto-rows-[minmax(14rem,_1fr)] gap-4">
