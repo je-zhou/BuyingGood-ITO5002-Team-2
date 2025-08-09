@@ -339,6 +339,26 @@ export function useApiClient() {
         const headers = await getAuthHeaders();
         return makeApiCall(`${API_BASE_URL}/auth/profile`, "GET", headers);
       },
+
+      // Metrics API functions
+      async trackProfileView(farmId: string) {
+        const headers = await getAuthHeaders(false); // No auth required for tracking views
+        return makeApiCall(
+          `${API_BASE_URL}/farms/${farmId}/track-view`,
+          "POST",
+          headers
+        );
+      },
+
+      async trackContactSubmission(farmId: string) {
+        const headers = await getAuthHeaders(false); // No auth required for tracking contact forms
+        return makeApiCall(
+          `${API_BASE_URL}/farms/${farmId}/track-contact`,
+          "POST",
+          headers
+        );
+      },
+
     }),
     [getAuthHeaders, makeApiCall]
   );
