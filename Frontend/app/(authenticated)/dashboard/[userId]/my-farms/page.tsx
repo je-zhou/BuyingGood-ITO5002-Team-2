@@ -5,23 +5,8 @@ import { useUser } from "@clerk/nextjs";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useApiClient } from "@/lib/api-client";
-
-interface Farm {
-  farmId: string;
-  name: string;
-  description: string;
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
-  contact_email: string;
-  contact_phone: string;
-  opening_hours: string;
-  ownerId: string;
-  createdAt: string;
-}
+import { Farm } from "@/lib/api-types";
+import { FarmsDashboard } from "@/components/FarmsDashboard";
 
 export default function FarmsPage({
   params,
@@ -77,7 +62,7 @@ function FarmTile({ farm, userId }: { farm: Farm; userId?: string }) {
         <div className="leading-none">
           <p className="font-semibold">{farm.name}</p>
           <p className="text-gray-400 text-sm">
-            {farm.address.city}, {farm.address.state}
+            {farm.address?.city}, {farm.address?.state}
           </p>
         </div>
       </div>
@@ -178,6 +163,9 @@ const FarmsContent = ({ userId }: { userId?: string }) => {
 
   return (
     <>
+      {/* Dashboard */}
+      <FarmsDashboard userId={userId} farms={farms} />
+
       {/* Farms Grid */}
       <div className="grid md:grid-cols-2 xl:grid-cols-3 auto-rows-[minmax(14rem,_1fr)] gap-4">
         <CreateFarmTile userId={userId} />
@@ -214,11 +202,17 @@ function FarmTileSkeleton() {
 // Skeleton loader component for the whole farms grid
 function FarmsSkeletonLoader({ userId }: { userId?: string }) {
   return (
-    <div className="grid md:grid-cols-2 xl:grid-cols-3 auto-rows-[minmax(14rem,_1fr)] gap-4">
-      <CreateFarmTile userId={userId} />
-      {[...Array(2)].map((_, index) => (
-        <FarmTileSkeleton key={index} />
-      ))}
-    </div>
+    <>
+      {/* Dashboard Cards Skeleton - pass undefined farms to show loading state */}
+      <FarmsDashboard userId={userId} farms={undefined} />
+
+      {/* Farms Grid Skeleton */}
+      <div className="grid md:grid-cols-2 xl:grid-cols-3 auto-rows-[minmax(14rem,_1fr)] gap-4">
+        <CreateFarmTile userId={userId} />
+        {[...Array(2)].map((_, index) => (
+          <FarmTileSkeleton key={index} />
+        ))}
+      </div>
+    </>
   );
 }

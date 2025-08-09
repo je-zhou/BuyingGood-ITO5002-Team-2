@@ -59,6 +59,12 @@ export interface Farm {
   createdAt: number; // Unix timestamp
   modifiedAt?: number; // Unix timestamp
   produce?: Produce[]; // Note: Not included in GET /farms response, only in individual farm details
+  metrics?: {
+    profileViews: number;
+    contactForms: number;
+    lastProfileView: number | null; // Unix timestamp
+    lastContactForm: number | null; // Unix timestamp
+  };
   // Note: Requirements show different field names
 }
 
@@ -102,6 +108,16 @@ export interface FarmProduceResponse {
 export interface CategoriesResponse {
   categories: string[];
 }
+
+// Dashboard Metrics
+export interface DashboardMetrics {
+  totalProfileViews: number;
+  contactFormsReceived: number;
+  kilometerseSaved: number;
+  co2Reduced: number;
+  farmCount: number;
+}
+
 
 // ================================
 // DISCREPANCIES FOUND:

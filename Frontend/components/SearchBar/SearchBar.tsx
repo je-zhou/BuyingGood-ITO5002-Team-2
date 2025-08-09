@@ -8,7 +8,9 @@ import Filters from "./Filters";
 
 interface SearchBarProps {
   searchQuery?: string;
+  locationQuery?: string;
   onSearchChange?: (query: string) => void;
+  onLocationChange?: (location: string) => void;
   onSearch?: () => void;
   distanceWithin?: number;
   onDistanceChange?: (distance: number) => void;
@@ -35,7 +37,9 @@ interface SearchBarProps {
 
 export default function SearchBar({
   searchQuery: externalSearchQuery,
+  locationQuery: externalLocationQuery,
   onSearchChange: externalOnSearchChange,
+  onLocationChange: externalOnLocationChange,
   onSearch: externalOnSearch,
   distanceWithin: externalDistanceWithin,
   onDistanceChange: externalOnDistanceChange,
@@ -45,7 +49,7 @@ export default function SearchBar({
 }: SearchBarProps = {}) {
   // Internal state (used when no external props provided)
   const [internalProductQuery, setInternalProductQuery] = useState("");
-  const [locationQuery, setLocationQuery] = useState("");
+  const [internalLocationQuery, setInternalLocationQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [internalDistanceWithin, setInternalDistanceWithin] = useState(50);
   const [internalCategories, setInternalCategories] = useState({
@@ -68,6 +72,10 @@ export default function SearchBar({
     externalSearchQuery !== undefined
       ? externalSearchQuery
       : internalProductQuery;
+  const locationQuery =
+    externalLocationQuery !== undefined
+      ? externalLocationQuery
+      : internalLocationQuery;
   const distanceWithin =
     externalDistanceWithin !== undefined
       ? externalDistanceWithin
@@ -111,6 +119,12 @@ export default function SearchBar({
         forestry: newValue,
         honey: newValue,
       });
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
     }
   };
 
@@ -167,6 +181,7 @@ export default function SearchBar({
                 setInternalProductQuery(e.target.value);
               }
             }}
+            onKeyDown={handleKeyDown}
           />
           <label className="relative w-fit">
             <Globe2 className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 stroke-1" />
@@ -175,7 +190,14 @@ export default function SearchBar({
               placeholder="Cairns, QLD..."
               className="md:border-l-0 rounded-sm md:rounded-l-none md:rounded-r-sm pl-10 h-10 md:h-12 w-full"
               value={locationQuery}
-              onChange={(e) => setLocationQuery(e.target.value)}
+              onChange={(e) => {
+                if (externalOnLocationChange) {
+                  externalOnLocationChange(e.target.value);
+                } else {
+                  setInternalLocationQuery(e.target.value);
+                }
+              }}
+              onKeyDown={handleKeyDown}
             />
           </label>
         </div>

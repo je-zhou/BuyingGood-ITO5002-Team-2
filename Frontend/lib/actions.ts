@@ -27,7 +27,8 @@ export async function sendContactEmail(formData: {
   try {
     const validatedData = contactFormSchema.parse(formData);
 
-    const { data, error } = await resend.emails.send({
+    // Send email to farmer
+    const { data: farmerData, error: farmerError } = await resend.emails.send({
       from: "BuyingGood <buyinggood@021-commerce.com.au>", // Replace with your verified domain
       to: [validatedData.farmEmail],
       subject: `New inquiry from ${validatedData.name} via Buying Good`,
@@ -54,14 +55,189 @@ export async function sendContactEmail(formData: {
       `,
     });
 
-    if (error) {
-      console.error("Resend error:", error);
-      return { success: false, error: "Failed to send email" };
+    if (farmerError) {
+      console.error("Resend error (farmer email):", farmerError);
+      return { success: false, error: "Failed to send email to farmer" };
     }
 
-    return { success: true, message: "Email sent successfully", id: data?.id };
+    // Send confirmation email to sender
+    const { data: senderData, error: senderError } = await resend.emails.send({
+      from: "BuyingGood <buyinggood@021-commerce.com.au>",
+      to: [validatedData.email],
+      subject: `Message sent to ${validatedData.farmName} - Confirmation`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Message Sent Successfully! 🌱</h2>
+          <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+            <p style="margin: 0; color: #155724; font-weight: 500;">
+              Your message has been successfully sent to <strong>${validatedData.farmName}</strong>!
+            </p>
+          </div>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #555;">What happens next?</h3>
+            <p style="color: #666; line-height: 1.6;">
+              The farmer will receive your inquiry and should be in touch with you soon. They can reply directly to your email address: <strong>${validatedData.email}</strong>
+            </p>
+          </div>
+
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #555;">Your message summary:</h3>
+            <p><strong>To:</strong> ${validatedData.farmName}</p>
+            <p><strong>From:</strong> ${validatedData.name}${validatedData.company ? ` (${validatedData.company})` : ""}</p>
+            <div style="margin-top: 15px; padding: 15px; background-color: white; border-radius: 4px;">
+              <p style="margin: 0; white-space: pre-wrap; color: #333;">${validatedData.message}</p>
+            </div>
+          </div>
+
+          <div style="text-align: center; margin-top: 30px; padding: 20px; background-color: #fff3cd; border-radius: 8px;">
+            <p style="margin: 0; color: #856404; font-size: 16px;">
+              Thank you for supporting local farms through BuyingGood! 🌾
+            </p>
+          </div>
+        </div>
+      `,
+    });
+
+    if (senderError) {
+      console.error("Resend error (confirmation email):", senderError);
+      // Don't fail the entire operation if confirmation email fails
+      console.warn("Confirmation email failed, but farmer email was sent successfully");
+    }
+
+    return { 
+      success: true, 
+      message: "Email sent successfully", 
+      farmerEmailId: farmerData?.id,
+      confirmationEmailId: senderData?.id 
+    };
   } catch (error) {
     console.error("Contact form error:", error);
+
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: "Validation failed",
+        details: error.issues,
+      };
+    }
+
+    return { success: false, error: "Internal server error" };
+  }
+}
+
+// General contact form schema for /contact page
+const generalContactFormSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.email("Please enter a valid email address"),
+  company: z.string().optional(),
+  category: z.enum(["general", "testimonial", "careers"], {
+    message: "Please select a category.",
+  }),
+  message: z.string().min(10, "Message must be at least 10 characters"),
+});
+
+export async function sendGeneralContactEmail(formData: {
+  name: string;
+  email: string;
+  company?: string;
+  category: "general" | "testimonial" | "careers";
+  message: string;
+}) {
+  try {
+    const validatedData = generalContactFormSchema.parse(formData);
+
+    const categoryLabels = {
+      general: "General Inquiry",
+      testimonial: "Testimonial",
+      careers: "Careers"
+    };
+
+    // Send email to BuyingGood team
+    const { data: teamData, error: teamError } = await resend.emails.send({
+      from: "BuyingGood <buyinggood@021-commerce.com.au>",
+      to: ["buyinggood@021-commerce.com.au"], // Replace with your team email
+      subject: `New ${categoryLabels[validatedData.category]} submission from ${validatedData.name}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">New Contact Form Submission</h2>
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #555;">Contact Details</h3>
+            <p><strong>Category:</strong> ${categoryLabels[validatedData.category]}</p>
+            <p><strong>Name:</strong> ${validatedData.name}</p>
+            <p><strong>Email:</strong> ${validatedData.email}</p>
+            ${validatedData.company ? `<p><strong>Company:</strong> ${validatedData.company}</p>` : ""}
+          </div>
+          <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px;">
+            <h3 style="margin-top: 0; color: #555;">Message</h3>
+            <p style="white-space: pre-wrap;">${validatedData.message}</p>
+          </div>
+          <div style="margin-top: 20px; padding: 15px; background-color: #e8f4f8; border-radius: 8px;">
+            <p style="margin: 0; font-size: 14px; color: #666;">
+              This message was sent through the BuyingGood contact form. You can reply directly to this email to respond to ${validatedData.name}.
+            </p>
+          </div>
+        </div>
+      `,
+    });
+
+    if (teamError) {
+      console.error("Resend error (team email):", teamError);
+      return { success: false, error: "Failed to send email to team" };
+    }
+
+    // Send confirmation email to sender
+    const { data: senderData, error: senderError } = await resend.emails.send({
+      from: "BuyingGood <buyinggood@021-commerce.com.au>",
+      to: [validatedData.email],
+      subject: `Thank you for contacting BuyingGood`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Thank you for reaching out! 🌱</h2>
+          <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+            <p style="margin: 0; color: #155724; font-weight: 500;">
+              We've received your message and someone from the BuyingGood team will be in touch as soon as possible.
+            </p>
+          </div>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #555;">What happens next?</h3>
+            <p style="color: #666; line-height: 1.6;">
+              Our team will review your message and endeavour to respond within 24-48 hours. We'll get back to you at: <strong>${validatedData.email}</strong>
+            </p>
+          </div>
+
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #555;">Your message summary:</h3>
+            <p><strong>Category:</strong> ${categoryLabels[validatedData.category]}</p>
+            <p><strong>From:</strong> ${validatedData.name}${validatedData.company ? ` (${validatedData.company})` : ""}</p>
+            <div style="margin-top: 15px; padding: 15px; background-color: white; border-radius: 4px;">
+              <p style="margin: 0; white-space: pre-wrap; color: #333;">${validatedData.message}</p>
+            </div>
+          </div>
+
+          <div style="text-align: center; margin-top: 30px; padding: 20px; background-color: #fff3cd; border-radius: 8px;">
+            <p style="margin: 0; color: #856404; font-size: 16px;">
+              Thank you for being part of the BuyingGood community! 🌾
+            </p>
+          </div>
+        </div>
+      `,
+    });
+
+    if (senderError) {
+      console.error("Resend error (confirmation email):", senderError);
+      console.warn("Confirmation email failed, but team email was sent successfully");
+    }
+
+    return { 
+      success: true, 
+      message: "Email sent successfully", 
+      teamEmailId: teamData?.id,
+      confirmationEmailId: senderData?.id 
+    };
+  } catch (error) {
+    console.error("General contact form error:", error);
 
     if (error instanceof z.ZodError) {
       return {

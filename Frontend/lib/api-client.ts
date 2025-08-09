@@ -3,7 +3,8 @@
 import { useAuth } from "@clerk/nextjs";
 import { useMemo, useCallback } from "react";
 
-const API_BASE_URL = "https://buyinggood-api.onrender.com";
+// const API_BASE_URL = "https://buyinggood-api.onrender.com"; // Iteration 1 URL
+const API_BASE_URL = "https://buyinggood-ito5002-team-2-v2.onrender.com";
 
 // Simple API client for unauthenticated requests (no React hooks)
 export const unauthenticatedApiClient = {
@@ -13,24 +14,24 @@ export const unauthenticatedApiClient = {
       : `${API_BASE_URL}/farms`;
 
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      cache: 'no-store',
+      cache: "no-store",
     });
 
     if (!response.ok) {
       const errorDetails = {
         url,
-        method: 'GET',
+        method: "GET",
         status: response.status,
         statusText: response.statusText,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
-      
+
       const errorMessage = `API Error:\n\nURL: ${errorDetails.url}\nMethod: ${errorDetails.method}\nStatus: ${errorDetails.status} (${errorDetails.statusText})\nTimestamp: ${errorDetails.timestamp}`;
-      
+
       throw new Error(errorMessage);
     }
 
@@ -41,11 +42,11 @@ export const unauthenticatedApiClient = {
     const url = `${API_BASE_URL}/farms/${farmId}`;
 
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      cache: 'no-store',
+      cache: "no-store",
     });
 
     if (!response.ok) {
@@ -151,178 +152,214 @@ ${
 export function useApiClient() {
   const { getToken } = useAuth();
 
-  const getAuthHeaders = useCallback(async (requireAuth: boolean = true): Promise<Record<string, string>> => {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
+  const getAuthHeaders = useCallback(
+    async (requireAuth: boolean = true): Promise<Record<string, string>> => {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
 
-    if (requireAuth) {
-      const token = await getToken();
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-    }
-
-    return headers;
-  }, [getToken]);
-
-  // Helper function for API calls with detailed error handling
-  const makeApiCall = useCallback(async (
-    url: string,
-    method: string,
-    headers: Record<string, string>,
-    body?: object
-  ) => {
-    try {
-      const response = await fetch(url, {
-        method,
-        headers,
-        ...(body && { body: JSON.stringify(body) }),
-        cache: "no-store",
-      });
-
-      let responseBody = null;
-      try {
-        responseBody = await response.clone().json();
-      } catch {
-        try {
-          responseBody = await response.clone().text();
-        } catch {
-          responseBody = "Could not read response body";
+      if (requireAuth) {
+        const token = await getToken();
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
         }
       }
 
-      if (!response.ok) {
-        const error = createDetailedError(url, method, headers, response);
-        error.responseBody = responseBody;
+      return headers;
+    },
+    [getToken]
+  );
 
-        // Log detailed error for developers
-        const errorReport = displayDetailedError(error);
+  // Helper function for API calls with detailed error handling
+  const makeApiCall = useCallback(
+    async (
+      url: string,
+      method: string,
+      headers: Record<string, string>,
+      body?: object
+    ) => {
+      try {
+        const response = await fetch(url, {
+          method,
+          headers,
+          ...(body && { body: JSON.stringify(body) }),
+          cache: "no-store",
+        });
 
-        // Throw detailed error for developers to see in UI
+        let responseBody = null;
+        try {
+          responseBody = await response.clone().json();
+        } catch {
+          try {
+            responseBody = await response.clone().text();
+          } catch {
+            responseBody = "Could not read response body";
+          }
+        }
+
+        if (!response.ok) {
+          const error = createDetailedError(url, method, headers, response);
+          error.responseBody = responseBody;
+
+          // Log detailed error for developers
+          const errorReport = displayDetailedError(error);
+
+          // Throw detailed error for developers to see in UI
+          throw new Error(errorReport);
+        }
+
+        return responseBody;
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "";
+        if (errorMessage.includes("🚨")) {
+          // Already a detailed error, re-throw it
+          throw error;
+        }
+
+        // Network or other error
+        const detailedError = createDetailedError(
+          url,
+          method,
+          headers,
+          undefined,
+          error
+        );
+
+        // Log and throw detailed error for developers to see in UI
+        const errorReport = displayDetailedError(detailedError);
         throw new Error(errorReport);
       }
-
-      return responseBody;
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "";
-      if (errorMessage.includes("🚨")) {
-        // Already a detailed error, re-throw it
-        throw error;
-      }
-
-      // Network or other error
-      const detailedError = createDetailedError(
-        url,
-        method,
-        headers,
-        undefined,
-        error
-      );
-
-      // Log and throw detailed error for developers to see in UI
-      const errorReport = displayDetailedError(detailedError);
-      throw new Error(errorReport);
-    }
-  }, []);
-
-  return useMemo(() => ({
-    // Farm API functions
-    async getFarms(searchParams?: URLSearchParams, requireAuth: boolean = true) {
-      const headers = await getAuthHeaders(requireAuth);
-      const url = searchParams
-        ? `${API_BASE_URL}/farms?${searchParams.toString()}`
-        : `${API_BASE_URL}/farms`;
-
-      return makeApiCall(url, "GET", headers);
     },
+    []
+  );
 
-    async getFarmById(farmId: string, requireAuth: boolean = false) {
-      const headers = await getAuthHeaders(requireAuth);
-      return makeApiCall(`${API_BASE_URL}/farms/${farmId}`, "GET", headers);
-    },
+  return useMemo(
+    () => ({
+      // Farm API functions
+      async getFarms(
+        searchParams?: URLSearchParams,
+        requireAuth: boolean = true
+      ) {
+        const headers = await getAuthHeaders(requireAuth);
+        const url = searchParams
+          ? `${API_BASE_URL}/farms?${searchParams.toString()}`
+          : `${API_BASE_URL}/farms`;
 
-    async createFarm(farmData: object) {
-      const headers = await getAuthHeaders();
-      return makeApiCall(`${API_BASE_URL}/farms`, "POST", headers, farmData);
-    },
+        return makeApiCall(url, "GET", headers);
+      },
 
-    async updateFarm(farmId: string, updates: object) {
-      const headers = await getAuthHeaders();
-      return makeApiCall(
-        `${API_BASE_URL}/farms/${farmId}`,
-        "PUT",
-        headers,
-        updates
-      );
-    },
+      async getFarmById(farmId: string, requireAuth: boolean = false) {
+        const headers = await getAuthHeaders(requireAuth);
+        return makeApiCall(`${API_BASE_URL}/farms/${farmId}`, "GET", headers);
+      },
 
-    async deleteFarm(farmId: string) {
-      const headers = await getAuthHeaders();
-      return makeApiCall(`${API_BASE_URL}/farms/${farmId}`, "DELETE", headers);
-    },
+      async createFarm(farmData: object) {
+        const headers = await getAuthHeaders();
+        return makeApiCall(`${API_BASE_URL}/farms`, "POST", headers, farmData);
+      },
 
-    // Produce/Products API functions
-    async getFarmProduce(farmId: string, searchParams?: URLSearchParams) {
-      const headers = await getAuthHeaders();
-      const url = searchParams
-        ? `${API_BASE_URL}/farms/${farmId}/produce?${searchParams.toString()}`
-        : `${API_BASE_URL}/farms/${farmId}/produce`;
+      async updateFarm(farmId: string, updates: object) {
+        const headers = await getAuthHeaders();
+        return makeApiCall(
+          `${API_BASE_URL}/farms/${farmId}`,
+          "PUT",
+          headers,
+          updates
+        );
+      },
 
-      return makeApiCall(url, "GET", headers);
-    },
+      async deleteFarm(farmId: string) {
+        const headers = await getAuthHeaders();
+        return makeApiCall(
+          `${API_BASE_URL}/farms/${farmId}`,
+          "DELETE",
+          headers
+        );
+      },
 
-    async getProduceById(produceId: string) {
-      const headers = await getAuthHeaders();
-      return makeApiCall(
-        `${API_BASE_URL}/produce/${produceId}`,
-        "GET",
-        headers
-      );
-    },
+      // Produce/Products API functions
+      async getFarmProduce(farmId: string, searchParams?: URLSearchParams) {
+        const headers = await getAuthHeaders();
+        const url = searchParams
+          ? `${API_BASE_URL}/farms/${farmId}/produce?${searchParams.toString()}`
+          : `${API_BASE_URL}/farms/${farmId}/produce`;
 
-    async createProduce(farmId: string, produceData: object) {
-      const headers = await getAuthHeaders();
-      return makeApiCall(
-        `${API_BASE_URL}/farms/${farmId}/produce`,
-        "POST",
-        headers,
-        produceData
-      );
-    },
+        return makeApiCall(url, "GET", headers);
+      },
 
-    async updateProduce(produceId: string, updates: object) {
-      const headers = await getAuthHeaders();
-      return makeApiCall(
-        `${API_BASE_URL}/produce/${produceId}`,
-        "PUT",
-        headers,
-        updates
-      );
-    },
+      async getProduceById(produceId: string) {
+        const headers = await getAuthHeaders();
+        return makeApiCall(
+          `${API_BASE_URL}/produce/${produceId}`,
+          "GET",
+          headers
+        );
+      },
 
-    async deleteProduce(produceId: string) {
-      const headers = await getAuthHeaders();
-      return makeApiCall(
-        `${API_BASE_URL}/produce/${produceId}`,
-        "DELETE",
-        headers
-      );
-    },
+      async createProduce(farmId: string, produceData: object) {
+        const headers = await getAuthHeaders();
+        return makeApiCall(
+          `${API_BASE_URL}/farms/${farmId}/produce`,
+          "POST",
+          headers,
+          produceData
+        );
+      },
 
-    async getMyFarms(searchParams?: URLSearchParams) {
-      const headers = await getAuthHeaders();
-      const url = searchParams
-        ? `${API_BASE_URL}/my_farms?${searchParams.toString()}`
-        : `${API_BASE_URL}/my_farms`;
+      async updateProduce(produceId: string, updates: object) {
+        const headers = await getAuthHeaders();
+        return makeApiCall(
+          `${API_BASE_URL}/produce/${produceId}`,
+          "PUT",
+          headers,
+          updates
+        );
+      },
 
-      return makeApiCall(url, "GET", headers);
-    },
+      async deleteProduce(produceId: string) {
+        const headers = await getAuthHeaders();
+        return makeApiCall(
+          `${API_BASE_URL}/produce/${produceId}`,
+          "DELETE",
+          headers
+        );
+      },
 
-    // Auth API functions
-    async getUserProfile() {
-      const headers = await getAuthHeaders();
-      return makeApiCall(`${API_BASE_URL}/auth/profile`, "GET", headers);
-    },
-  }), [getAuthHeaders, makeApiCall]);
+      async getMyFarms(searchParams?: URLSearchParams) {
+        const headers = await getAuthHeaders();
+        const url = searchParams
+          ? `${API_BASE_URL}/my_farms?${searchParams.toString()}`
+          : `${API_BASE_URL}/my_farms`;
+
+        return makeApiCall(url, "GET", headers);
+      },
+
+      // Auth API functions
+      async getUserProfile() {
+        const headers = await getAuthHeaders();
+        return makeApiCall(`${API_BASE_URL}/auth/profile`, "GET", headers);
+      },
+
+      // Metrics API functions
+      async trackProfileView(farmId: string) {
+        const headers = await getAuthHeaders(false); // No auth required for tracking views
+        return makeApiCall(
+          `${API_BASE_URL}/farms/${farmId}/track-view`,
+          "POST",
+          headers
+        );
+      },
+
+      async trackContactSubmission(farmId: string) {
+        const headers = await getAuthHeaders(false); // No auth required for tracking contact forms
+        return makeApiCall(
+          `${API_BASE_URL}/farms/${farmId}/track-contact`,
+          "POST",
+          headers
+        );
+      },
+
+    }),
+    [getAuthHeaders, makeApiCall]
+  );
 }
