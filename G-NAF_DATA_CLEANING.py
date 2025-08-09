@@ -130,6 +130,15 @@ df_merge = df_merge.rename(columns={'locality_name':'city', 'postcode':'zipcode'
 # Export cleaned data to csv
 df_merge.to_csv('QLD_ADDRESS_DETAIL_CLEAN.csv', index = False)
 
+# Create the GeoJSON 'location' field
+df_merge['location'] = df_merge.apply(lambda row: {
+    "type": "Point",
+    "coordinates": [row['longitude'], row['latitude']]
+}, axis=1)
+
+# Convert to dictionary
+records = df_merge.to_dict(orient='records')
+
 ## INSERT TO MONGODB
 
 from pymongo import MongoClient
@@ -147,20 +156,11 @@ collection = db['national_address_file']
 # Delete all documents in the collection
 delete = collection.delete_many({})
 
-# Loop through 50k rows to avoid timeout error
-rows = 50000
-i = 0
-j = 0
+# Loop through in batches to avoid a connection timeout error
+batch_size = 50000
+for i in range(0, len(records), batch_size):
+    batch = records[i:i + batch_size]
+    collection.insert_many(batch)
 
-while j < len(df_merge):
-    # Define j row
-    j = min(i + rows, len(df_merge))
-    
-    # Select only rows from i to j
-    df = df_merge.iloc[i:j]
-
-    # Insert updated documents to collection
-    collection.insert_many(df.to_dict('records'))
-    
-    # Update i 
-    i = i + rows
+# Create 2dsphere index to speed up performance
+collection.create_index([("location", "2dsphere")])
