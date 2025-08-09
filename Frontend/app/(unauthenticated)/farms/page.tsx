@@ -41,6 +41,7 @@ interface SearchResponse {
 // API function to fetch farms
 async function fetchFarms(params: {
   query?: string;
+  location?: string;
   page?: number;
   distance?: number;
   categories?: string[];
@@ -48,6 +49,7 @@ async function fetchFarms(params: {
   const searchParams = new URLSearchParams();
 
   if (params.query) searchParams.set("q", params.query);
+  if (params.location) searchParams.set("location", params.location);
   if (params.page) searchParams.set("page", params.page.toString());
   if (params.distance) searchParams.set("distance", params.distance.toString());
   if (params.categories && params.categories.length > 0) {
@@ -63,6 +65,7 @@ function FarmsPageContent() {
 
   // State for form inputs
   const [searchQuery, setSearchQuery] = useState("");
+  const [locationQuery, setLocationQuery] = useState("");
   const [distanceWithin, setDistanceWithin] = useState(50);
   const [categories, setCategories] = useState({
     fruits: true,
@@ -88,8 +91,7 @@ function FarmsPageContent() {
   const [hasNextPage, setHasNextPage] = useState(true);
 
   // Hover states
-  const [hoveredFarm, setHoveredFarm] = useState<string | null>(null);
-  const [hoveredProduce, setHoveredProduce] = useState<Produce | null>(null);
+  const [hoveredProduceId, setHoveredProduceId] = useState<string | null>(null);
 
   // Refs for infinite scroll
   const observerTarget = useRef<HTMLDivElement>(null);
@@ -102,10 +104,12 @@ function FarmsPageContent() {
   // Initialize state from URL parameters
   useEffect(() => {
     const query = searchParams.get("q") || "";
+    const location = searchParams.get("location") || "";
     const distance = parseInt(searchParams.get("distance") || "50");
     const categoriesParam = searchParams.get("categories");
 
     setSearchQuery(query);
+    setLocationQuery(location);
     setDistanceWithin(distance);
 
     if (categoriesParam) {
@@ -144,6 +148,7 @@ function FarmsPageContent() {
     // Perform initial search
     performSearch({
       query,
+      location,
       page: 1,
       distance,
       categories: categoriesParam ? categoriesParam.split(",") : [],
@@ -153,6 +158,7 @@ function FarmsPageContent() {
 
   const performSearch = async (params: {
     query?: string;
+    location?: string;
     page?: number;
     distance?: number;
     categories?: string[];
@@ -212,6 +218,7 @@ function FarmsPageContent() {
     // Update URL with search parameters
     const params = new URLSearchParams();
     if (searchQuery) params.set("q", searchQuery);
+    if (locationQuery) params.set("location", locationQuery);
     if (distanceWithin !== 50)
       params.set("distance", distanceWithin.toString());
     // Only add categories to URL if not all are selected (to keep URL clean)
@@ -227,11 +234,13 @@ function FarmsPageContent() {
     if (!hasNextPage || loadingMore || loading) return;
 
     const query = searchParams.get("q") || "";
+    const location = searchParams.get("location") || "";
     const distance = parseInt(searchParams.get("distance") || "50");
     const categoriesParam = searchParams.get("categories");
 
     await performSearch({
       query,
+      location,
       page: currentPageRef.current + 1,
       distance,
       categories: categoriesParam ? categoriesParam.split(",") : [],
@@ -325,7 +334,9 @@ function FarmsPageContent() {
         <div ref={searchBarRef}>
           <SearchBar
             searchQuery={searchQuery}
+            locationQuery={locationQuery}
             onSearchChange={setSearchQuery}
+            onLocationChange={setLocationQuery}
             onSearch={handleSearch}
             distanceWithin={distanceWithin}
             onDistanceChange={setDistanceWithin}
@@ -346,7 +357,9 @@ function FarmsPageContent() {
           <div className="mx-auto px-4 py-4 max-w-screen-2xl">
             <SearchBar
               searchQuery={searchQuery}
+              locationQuery={locationQuery}
               onSearchChange={setSearchQuery}
+              onLocationChange={setLocationQuery}
               onSearch={handleSearch}
               distanceWithin={distanceWithin}
               onDistanceChange={setDistanceWithin}
@@ -387,8 +400,49 @@ function FarmsPageContent() {
           </div>
         )}
 
+        {/* No Results Found */}
+        {!loading && !error && farms.length === 0 && (
+          <div className="mt-8 py-12 text-center">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 max-w-md mx-auto">
+              <div className="mb-4">
+                <svg
+                  className="w-16 h-16 text-gray-400 mx-auto mb-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No farms found
+              </h3>
+              <p className="text-gray-600 mb-4">
+                We couldn&apos;t find any farms matching your search criteria.
+                Try adjusting your search terms or location.
+              </p>
+              <Button
+                onClick={() => {
+                  setSearchQuery("");
+                  setLocationQuery("");
+                  handleSearch();
+                }}
+                variant="outline"
+                className="border-primary text-primary hover:bg-primary/10"
+              >
+                Clear Search
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Farm Results */}
-        {!loading && !error && (
+        {!loading && !error && farms.length > 0 && (
           <div className="mt-6 md:mt-8 space-y-4 md:space-y-6">
             {farms.map((farm) => (
               <div
@@ -474,18 +528,21 @@ function FarmsPageContent() {
                     {/* Produce Tiles */}
                     <div className="md:flex-shrink-0">
                       <div className="grid grid-cols-3 grid-rows-2 gap-4 w-96 h-60">
-                        {farm.produce?.slice(0, 6).map((produce) => (
-                          <div key={produce.produceId} className="relative">
+                        {farm.produce?.slice(0, 6).map((produce, index) => (
+                          <div
+                            key={`${farm.farmId}-${produce.produceId}-${index}`}
+                            className="relative"
+                          >
                             <Link href={`/farms/${farm.farmId}`}>
                               <div
                                 className="w-28 h-28 rounded-lg overflow-hidden bg-gray-100 cursor-pointer relative group border border-gray-200 hover:border-gray-300 transition-colors shadow-sm hover:shadow-md"
                                 onMouseEnter={() => {
-                                  setHoveredFarm(farm.farmId);
-                                  setHoveredProduce(produce);
+                                  setHoveredProduceId(
+                                    `${farm.farmId}-${produce.produceId}-${index}`
+                                  );
                                 }}
                                 onMouseLeave={() => {
-                                  setHoveredFarm(null);
-                                  setHoveredProduce(null);
+                                  setHoveredProduceId(null);
                                 }}
                               >
                                 {produce.images && produce.images.length > 0 ? (
@@ -514,13 +571,12 @@ function FarmsPageContent() {
                             </Link>
 
                             {/* Hover Card */}
-                            {hoveredFarm === farm.farmId &&
-                              hoveredProduce?.produceId ===
-                                produce.produceId && (
-                                <div className="absolute top-full right-0 mt-2 z-10">
-                                  <ProductHoverCard produce={produce} />
-                                </div>
-                              )}
+                            {hoveredProduceId ===
+                              `${farm.farmId}-${produce.produceId}-${index}` && (
+                              <div className="absolute top-full right-0 mt-2 z-10">
+                                <ProductHoverCard produce={produce} />
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
