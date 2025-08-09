@@ -8,7 +8,9 @@ import Filters from "./Filters";
 
 interface SearchBarProps {
   searchQuery?: string;
+  locationQuery?: string;
   onSearchChange?: (query: string) => void;
+  onLocationChange?: (location: string) => void;
   onSearch?: () => void;
   distanceWithin?: number;
   onDistanceChange?: (distance: number) => void;
@@ -26,13 +28,18 @@ interface SearchBarProps {
     forestry: boolean;
     honey: boolean;
   };
-  onCategoryChange?: (category: keyof SearchBarProps['categories'], checked: boolean) => void;
+  onCategoryChange?: (
+    category: keyof SearchBarProps["categories"],
+    checked: boolean
+  ) => void;
   onSelectAll?: () => void;
 }
 
 export default function SearchBar({
   searchQuery: externalSearchQuery,
+  locationQuery: externalLocationQuery,
   onSearchChange: externalOnSearchChange,
+  onLocationChange: externalOnLocationChange,
   onSearch: externalOnSearch,
   distanceWithin: externalDistanceWithin,
   onDistanceChange: externalOnDistanceChange,
@@ -42,7 +49,7 @@ export default function SearchBar({
 }: SearchBarProps = {}) {
   // Internal state (used when no external props provided)
   const [internalProductQuery, setInternalProductQuery] = useState("");
-  const [locationQuery, setLocationQuery] = useState("");
+  const [internalLocationQuery, setInternalLocationQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [internalDistanceWithin, setInternalDistanceWithin] = useState(50);
   const [internalCategories, setInternalCategories] = useState({
@@ -61,8 +68,18 @@ export default function SearchBar({
   });
 
   // Use external props if provided, otherwise use internal state
-  const productQuery = externalSearchQuery !== undefined ? externalSearchQuery : internalProductQuery;
-  const distanceWithin = externalDistanceWithin !== undefined ? externalDistanceWithin : internalDistanceWithin;
+  const productQuery =
+    externalSearchQuery !== undefined
+      ? externalSearchQuery
+      : internalProductQuery;
+  const locationQuery =
+    externalLocationQuery !== undefined
+      ? externalLocationQuery
+      : internalLocationQuery;
+  const distanceWithin =
+    externalDistanceWithin !== undefined
+      ? externalDistanceWithin
+      : internalDistanceWithin;
   const categories = externalCategories || internalCategories;
 
   const handleCategoryChange = (
@@ -70,7 +87,10 @@ export default function SearchBar({
     checked: boolean
   ) => {
     if (externalOnCategoryChange) {
-      externalOnCategoryChange(category as keyof SearchBarProps['categories'], checked);
+      externalOnCategoryChange(
+        category as keyof SearchBarProps["categories"],
+        checked
+      );
     } else {
       setInternalCategories((prev) => ({
         ...prev,
@@ -102,6 +122,12 @@ export default function SearchBar({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   const handleSearch = () => {
     if (externalOnSearch) {
       externalOnSearch();
@@ -125,27 +151,27 @@ export default function SearchBar({
       const selectedCategories = Object.entries(categories)
         .filter(([, value]) => value)
         .map(([key]) => key);
-      
+
       const allCategories = Object.keys(categories);
       const allSelected = selectedCategories.length === allCategories.length;
-      
+
       // Only add categories to URL if not all are selected
       if (!allSelected && selectedCategories.length > 0) {
-        params.append("categories", selectedCategories.join(','));
+        params.append("categories", selectedCategories.join(","));
       }
 
-      const searchUrl = `/search?${params.toString()}`;
+      const searchUrl = `/farms?${params.toString()}`;
       window.location.href = searchUrl;
     }
   };
 
   return (
     <div className="w-full">
-      <div className="flex items-center gap-4 w-full h-full">
-        <div className="flex items-center w-full">
+      <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 w-full h-full">
+        <div className="flex flex-col md:flex-row items-center w-full h-full gap-2 md:gap-0">
           <Input
             placeholder="I want to buy..."
-            className="rounded-l-sm rounded-r-none h-12"
+            className="rounded-sm md:rounded-l-sm md:rounded-r-none h-10 md:h-12 w-full"
             type="text"
             value={productQuery}
             onChange={(e) => {
@@ -155,21 +181,33 @@ export default function SearchBar({
                 setInternalProductQuery(e.target.value);
               }
             }}
+            onKeyDown={handleKeyDown}
           />
-          <label className="relative">
+          <label className="relative w-fit">
             <Globe2 className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 stroke-1" />
             <Input
               type="text"
               placeholder="Cairns, QLD..."
-              className="border-l-0 rounded-l-none rounded-r-sm pl-10 h-12"
+              className="md:border-l-0 rounded-sm md:rounded-l-none md:rounded-r-sm pl-10 h-10 md:h-12 w-full"
               value={locationQuery}
-              onChange={(e) => setLocationQuery(e.target.value)}
+              onChange={(e) => {
+                if (externalOnLocationChange) {
+                  externalOnLocationChange(e.target.value);
+                } else {
+                  setInternalLocationQuery(e.target.value);
+                }
+              }}
+              onKeyDown={handleKeyDown}
             />
           </label>
         </div>
 
-        <Button className="h-full" onClick={handleSearch}>
-          Find Local Farmers
+        <Button
+          className="h-10 md:h-12 cursor-pointer w-full md:w-auto px-3 md:px-4 text-sm md:text-base"
+          onClick={handleSearch}
+        >
+          <span className="hidden md:inline">Find Local Farmers</span>
+          <span className="md:hidden">Search</span>
         </Button>
       </div>
 
@@ -195,7 +233,9 @@ export default function SearchBar({
         <Filters
           distanceWithin={distanceWithin}
           categories={categories}
-          onDistanceChange={externalOnDistanceChange || setInternalDistanceWithin}
+          onDistanceChange={
+            externalOnDistanceChange || setInternalDistanceWithin
+          }
           onCategoryChange={handleCategoryChange}
           onSelectAll={handleSelectAll}
         />

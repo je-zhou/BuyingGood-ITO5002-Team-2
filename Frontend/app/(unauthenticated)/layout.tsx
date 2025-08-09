@@ -8,9 +8,9 @@ export default function UnautenticatedLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div>
+    <div className="min-h-screen flex flex-col bg-white">
       <Navbar />
-      {children}
+      <main className="flex-grow w-full mx-auto px-4">{children}</main>
       <Footer />
     </div>
   );

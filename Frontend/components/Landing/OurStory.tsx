@@ -1,4 +1,7 @@
 import React from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function OurStory() {
   return (
@@ -21,7 +24,28 @@ export default function OurStory() {
             fresh produce.
           </p>
         </div>
+        
+        <div className="flex gap-4 mt-6">
+          <Link href="/farms">
+            <Button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2">
+              Explore Local Farms
+            </Button>
+          </Link>
+          <Link href="/about">
+            <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50 px-6 py-2">
+              Learn More About Us
+            </Button>
+          </Link>
+        </div>
       </div>
+
+      <Image
+        src={"/farmer.png"}
+        alt="logo"
+        width={480}
+        height={400}
+        className="rounded-lg border my-6"
+      />
     </div>
   );
 }
