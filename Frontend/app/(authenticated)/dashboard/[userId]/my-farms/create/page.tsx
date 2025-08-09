@@ -339,7 +339,7 @@ export default function CreateFarm({ params }: { params: Promise<{ userId: strin
               <SimpleImageUpload
                 value={formData.images}
                 onChange={(images) => handleInputChange('images', images)}
-                maxFiles={5}
+                maxFiles={6}
                 folder="farms" 
                 disabled={saving}
               />
