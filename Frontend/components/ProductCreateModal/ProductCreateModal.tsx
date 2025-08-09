@@ -386,7 +386,7 @@ export default function ProductCreateModal({
             <SimpleImageUpload
               value={formData.images}
               onChange={(images) => handleInputChange('images', images)}
-              maxFiles={5}
+              maxFiles={6}
               folder="products" 
               disabled={saving}
             />

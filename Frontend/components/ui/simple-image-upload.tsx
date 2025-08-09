@@ -17,21 +17,36 @@ interface SimpleImageUploadProps {
 export default function SimpleImageUpload({
   value = [],
   onChange,
-  maxFiles = 5,
+  maxFiles = 6,
   folder = 'buyinggood',
   disabled = false
 }: SimpleImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
   const currentImagesRef = useRef<string[]>(value);
+  const originalOverflowRef = useRef<string | null>(null);
 
   // Keep ref in sync with prop value
   useEffect(() => {
     currentImagesRef.current = value;
   }, [value]);
 
+  // Cleanup effect to reset body overflow on unmount
+  useEffect(() => {
+    return () => {
+      // Reset body overflow when component unmounts
+      if (typeof window !== 'undefined' && originalOverflowRef.current !== null) {
+        document.body.style.overflow = originalOverflowRef.current;
+      }
+    };
+  }, []);
+
   const handleUploadStart = () => {
     setUploading(true);
+    // Store the original overflow value before Cloudinary modifies it
+    if (typeof window !== 'undefined' && document.body.style.overflow !== 'hidden') {
+      originalOverflowRef.current = document.body.style.overflow || '';
+    }
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -40,6 +55,12 @@ export default function SimpleImageUpload({
       const newUrl = result.info.secure_url;
       console.log('Adding URL:', newUrl);
       console.log('Current images before update:', currentImagesRef.current);
+      
+      // Check if adding this image would exceed maxFiles limit
+      if (currentImagesRef.current.length >= maxFiles) {
+        console.warn(`Maximum ${maxFiles} images reached. Ignoring additional upload.`);
+        return;
+      }
       
       // Use ref to get current state and avoid stale closure
       const updatedImages = [...currentImagesRef.current, newUrl];
@@ -53,17 +74,30 @@ export default function SimpleImageUpload({
     }
   };
 
+  const resetBodyOverflow = () => {
+    if (typeof window !== 'undefined' && originalOverflowRef.current !== null) {
+      document.body.style.overflow = originalOverflowRef.current;
+      originalOverflowRef.current = null;
+    }
+  };
+
   const handleQueuesEnd = () => {
     console.log('All uploads complete');
     setUploading(false);
+    // Reset body overflow when all uploads are done
+    setTimeout(resetBodyOverflow, 100);
   };
 
   const handleUploadError = () => {
     setUploading(false);
+    // Reset body overflow on error
+    setTimeout(resetBodyOverflow, 100);
   };
 
   const handleUploadClose = () => {
     setUploading(false);
+    // Reset body overflow when widget closes
+    setTimeout(resetBodyOverflow, 100);
   };
 
   const handleImageLoad = (url: string) => {
@@ -125,6 +159,9 @@ export default function SimpleImageUpload({
               multiple: true,
               maxFiles: Math.max(1, maxFiles - value.length),
               sources: ['local', 'url', 'camera'],
+              clientAllowedFormats: ['image'],
+              maxImageWidth: 2000,
+              maxImageHeight: 2000,
               styles: {
                 palette: {
                   window: "#FFFFFF",

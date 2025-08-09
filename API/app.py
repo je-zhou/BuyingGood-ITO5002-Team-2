@@ -479,6 +479,12 @@ def create_farm():
     # Add the additional fields
     data["ownerId"] = ObjectId(g.user_id)
     data["createdAt"] = datetime.datetime.now()
+    data["metrics"] = {
+        "profileViews": 0,
+        "contactForms": 0,
+        "lastProfileView": None,
+        "lastContactForm": None
+    }
 
     # Add the farm
     farmId = db.farms.insert_one(data).inserted_id
@@ -1180,6 +1186,77 @@ def categories():
     except Exception as e:
         app.logger.warning(e)
         return exc.handle_error(e)
+
+""" Metrics Endpoints """
+
+@app.route('/farms/<farmId>/track-view', methods=["POST"])
+@cross_origin()
+def track_profile_view(farmId: str):
+    """
+        Track a profile view for a specific farm
+        
+        Endpoint: POST /farms/:farmId/track-view
+        
+        Response (200 OK)
+    """
+    try:
+        db = client.farm_details
+        
+        farm = db.farms.find_one({"_id": ObjectId(farmId)})
+        
+        if farm is None:
+            raise exc.BadRequest(f"Farm not found, {farmId}")
+        
+        db.farms.update_one(
+            {"_id": ObjectId(farmId)},
+            {
+                "$inc": {"metrics.profileViews": 1},
+                "$set": {"metrics.lastProfileView": datetime.datetime.now()}
+            }
+        )
+        
+        return jsonify({
+            "success": True,
+            "message": "Profile view tracked successfully"
+        }), 200
+    except Exception as e:
+        print(e)
+        return exc.handle_error(e)
+
+@app.route('/farms/<farmId>/track-contact', methods=["POST"])
+@cross_origin()
+def track_contact_submission(farmId: str):
+    """
+        Track a contact form submission for a specific farm
+        
+        Endpoint: POST /farms/:farmId/track-contact
+        
+        Response (200 OK)
+    """
+    try:
+        db = client.farm_details
+        
+        farm = db.farms.find_one({"_id": ObjectId(farmId)})
+        
+        if farm is None:
+            raise exc.BadRequest(f"Farm not found, {farmId}")
+        
+        db.farms.update_one(
+            {"_id": ObjectId(farmId)},
+            {
+                "$inc": {"metrics.contactForms": 1},
+                "$set": {"metrics.lastContactForm": datetime.datetime.now()}
+            }
+        )
+        
+        return jsonify({
+            "success": True,
+            "message": "Contact form submission tracked successfully"
+        }), 200
+    except Exception as e:
+        print(e)
+        return exc.handle_error(e)
+
 
 """ Run Flask App """
 

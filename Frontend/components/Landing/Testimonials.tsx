@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import {
   Carousel,
   CarouselContent,
@@ -8,6 +9,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { Button } from "@/components/ui/button";
 
 interface Testimonial {
   name: string;
@@ -146,6 +148,24 @@ export default function Testimonials() {
           <CarouselPrevious className="-left-12 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white shadow-lg border-0" />
           <CarouselNext className="-right-12 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white shadow-lg border-0" />
         </Carousel>
+      </div>
+
+      <div className="w-full bg-green-50 py-16 mt-16">
+        <div className="max-w-6xl mx-auto px-4 text-center">
+          <div className="bg-white rounded-xl shadow-lg p-8 border border-green-100">
+            <h3 className="text-2xl font-semibold text-gray-900 mb-4">
+              Have Your Own Story to Share?
+            </h3>
+            <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+              Have feedback? Let us know how BuyingGood has worked for you. We&apos;d love to hear about your experience!
+            </p>
+            <Link href="/contact">
+              <Button size="lg" className="bg-green-600 hover:bg-green-700 text-white">
+                Share Your Feedback
+              </Button>
+            </Link>
+          </div>
+        </div>
       </div>
     </section>
   );

@@ -3,10 +3,12 @@ import DashboardNavbar from "@/components/layout/DashboardNavbar";
 
 export const metadata: Metadata = {
   title: "Farmer Dashboard - Buying Good",
-  description: "Manage your farm profile, products, and connect with local customers through the Buying Good platform.",
+  description:
+    "Manage your farm profile, products, and connect with local customers through the Buying Good platform.",
   openGraph: {
     title: "Farmer Dashboard - Buying Good",
-    description: "Manage your farm profile and products on the Buying Good platform.",
+    description:
+      "Manage your farm profile and products on the Buying Good platform.",
   },
   robots: {
     index: false,
