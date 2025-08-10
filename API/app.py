@@ -485,9 +485,9 @@ def create_farm():
     location_query["state"] = address["state"]
 
     center_point_doc = None
-    while not center_point_doc or location_query.keys() == []:
+    while not center_point_doc or list(location_query.keys()) == []:
         center_point_doc = db.national_address_file.find_one(location_query)
-        location_query.pop(location_query.keys()[0])
+        location_query.pop(list(location_query.keys())[0])
     
     if not center_point_doc:
         app.logger.warning("Address not found!")
@@ -798,9 +798,9 @@ def update_farm(farmId : str):
             location_query["state"] = set_data["address.state"]
 
             center_point_doc = None
-            while not center_point_doc or location_query.keys() == []:
+            while not center_point_doc or list(location_query.keys()) == []:
                 center_point_doc = db.national_address_file.find_one(location_query)
-                location_query.pop(location_query.keys()[0])
+                location_query.pop(list(location_query.keys())[0])
             
             if not center_point_doc:
                 app.logger.warning("Address not found!")
