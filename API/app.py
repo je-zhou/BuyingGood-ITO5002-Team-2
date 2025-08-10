@@ -54,8 +54,8 @@ try:
     app.logger.info("Pinged your deployment. You successfully connected to MongoDB!")
 except Exception as e:
     app.logger.info(e)
-
-
+    
+  
 """ Clerk Authentication """
 
 from clerk_backend_api import Clerk
@@ -475,7 +475,7 @@ def create_farm():
             address['zipCodeInt'] = int(address.get('zipCode'))
         except (ValueError, TypeError, AttributeError):
             address['zipCodeInt'] = None
-
+    
     # Search for the address in the register
     # Attempt 1, full address:
     location_query = {}
@@ -788,7 +788,7 @@ def update_farm(farmId : str):
                         set_data['address.zipCodeInt'] = None
                 else:
                     set_data[f'address.{addr_key}'] = addr_value
-                
+                    
             # Search for the address in the register
             # Attempt 1, full address:
             location_query = {}
@@ -809,7 +809,6 @@ def update_farm(farmId : str):
                 center_point = center_point_doc['location']
             
             set_data['location'] = center_point
-
         else:
             # Handle top-level fields
             set_data[key] = value
